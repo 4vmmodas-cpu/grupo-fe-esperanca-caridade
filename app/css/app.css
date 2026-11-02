@@ -250,3 +250,9 @@ textarea { resize: vertical; }
 .atalhos-prazo { display: flex; gap: 8px; margin-top: -6px; }
 .dica { font-size: .84rem; }
 .abas span { white-space: nowrap; }
+
+/* ===== Notificações ===== */
+.push-corpo { display: flex; flex-direction: column; gap: 10px; }
+.ok-push { color: var(--verde); font-weight: 800; }
+.aviso-push { display: flex; align-items: center; gap: 10px; background: var(--vermelho-claro); border-radius: var(--raio); padding: 12px 14px; font-size: .92rem; }
+.aviso-push p { flex: 1; }

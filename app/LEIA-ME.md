@@ -52,7 +52,22 @@ O botão **🔔 Lembrete** salva o encontro ou a lição na agenda do próprio c
 - **iPhone:** abre direto "Adicionar à Agenda".
 - **Android:** abre o arquivo com o app de agenda, ou use **Abrir no Google Agenda**.
 
-> **Próxima etapa:** notificação *push* enviada pelo próprio app 2 h antes de cada encontro, usando o agendador do Supabase (grátis).
+## Notificações push (aviso automático antes dos encontros)
+Cada pessoa ativa em **Mais > 🔔 Notificações** e escolhe a antecedência: 30 min, 1 h, 2 h, 3 h ou 1 dia.
+O Supabase confere a cada 5 minutos e envia o aviso, mesmo com o app fechado.
+Lições **para todos** com prazo também avisam às 8h do dia do prazo, para quem ainda não marcou "Fiz".
+
+**Configuração (uma vez só):**
+1. **SQL Editor:** rode `supabase-push.sql`.
+2. **Edge Functions** > *Deploy a new function* > *Via Editor*. Nome: **`lembretes`**. Cole o conteúdo de `supabase/functions/lembretes/index.ts` e clique em **Deploy**.
+3. **Edge Functions** > **Secrets:** adicione `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY`. A chave pública está em `js/supabase-config.js`. A privada **nunca** vai para o código.
+4. **SQL Editor:** rode `supabase-push-agendador.sql`.
+5. No app: **Mais > Ativar notificações > Enviar teste**.
+
+> No **iPhone** (iOS 16.4 ou mais novo), as notificações só funcionam com o app **instalado na tela inicial**.
+
+## E-mail ("Esqueci minha senha")
+Veja `supabase-emails.md`: envio pelo Gmail do grupo, grátis, com os textos em português.
 
 ## Segurança
 - Quem não foi liberado não vê nada.

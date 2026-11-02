@@ -3,6 +3,7 @@ import {
   linkMapa, abrirModal, confirmar, toast, salvando, abrirLembrete
 } from "./ui.js";
 import { novaLicao } from "./licoes.js";
+import { suporte } from "./push.js";
 
 /* Converte um encontro para o formato de lembrete */
 const paraLembrete = (e) => ({
@@ -42,7 +43,13 @@ export function render(el, ctx) {
     tituloLista = `Próximos encontros ${lista.length > 1 ? `<button class="link" data-lembrar-todos>🔔 Lembrete de todos</button>` : ""}`;
   }
 
+  let dispensou = false;
+  try { dispensou = localStorage.getItem("aviso-push") === "x"; } catch {}
+  const convidar = !dispensou && "Notification" in window && Notification.permission === "default" && suporte() === "ok";
+
   el.innerHTML = `
+    ${convidar ? `<div class="aviso-push"><span>🔔</span><p>Quer ser avisado antes de cada gira e estudo?</p>
+      <button class="btn btn-primario btn-peq" data-ir-push>Ativar</button><button class="btn-icone" data-fechar-push aria-label="Dispensar">✕</button></div>` : ""}
     <section class="cartao calendario">
       <div class="cal-topo">
         <button class="btn-icone" data-mes="-1" aria-label="Mês anterior">‹</button>
@@ -58,6 +65,11 @@ export function render(el, ctx) {
       : `<p class="vazio">${diaSel ? "Nenhum encontro neste dia." : "Nenhum encontro agendado."}${admin ? " Toque em + para criar." : ""}</p>`}</div>
     ${admin ? `<button class="fab" data-novo aria-label="Novo encontro">+</button>` : ""}`;
 
+  el.querySelector("[data-ir-push]")?.addEventListener("click", () => ctx.irPara("mais"));
+  el.querySelector("[data-fechar-push]")?.addEventListener("click", () => {
+    try { localStorage.setItem("aviso-push", "x"); } catch {}
+    el.querySelector(".aviso-push").remove();
+  });
   el.querySelectorAll("[data-mes]").forEach((b) => b.onclick = () => {
     mesVisto = new Date(ano, m + Number(b.dataset.mes), 1); diaSel = null; render(el, ctx);
   });
