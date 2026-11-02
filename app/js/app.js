@@ -150,8 +150,9 @@ function renderView() {
   if (!VIEWS[state.aba]) state.aba = "agenda";
   raiz.querySelectorAll("[data-aba]").forEach((b) => b.classList.toggle("ativa", b.dataset.aba === state.aba));
   const pend = ehAdmin() ? state.usuarios.filter((u) => u.papel === "pendente").length : 0;
+  const faltaDados = mais.dadosFaltando(state).length > 0;
   const selo = raiz.querySelector('[data-aba=mais] .selo-aba');
-  if (selo) { selo.hidden = !pend; selo.textContent = pend; }
+  if (selo) { selo.hidden = !pend && !faltaDados; selo.textContent = pend || "!"; }
   const minhas = state.licoes.filter((l) => !(l.concluidas || []).includes(state.user.id)).length;
   const seloL = raiz.querySelector('[data-aba=licoes] .selo-aba');
   if (seloL) { seloL.hidden = !minhas; seloL.textContent = minhas; }

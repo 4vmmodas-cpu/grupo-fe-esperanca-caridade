@@ -44,6 +44,22 @@ async function cartaoPush(box) {
   });
 }
 
+/* Quais dados principais faltam na ficha da própria pessoa (vazio = completa) */
+export function dadosFaltando(state) {
+  const m = state.membros.find((x) => x.perfilId === state.perfil?.id);
+  if (!m) return [];
+  return [[!m.whatsapp, "WhatsApp"], [!m.nascimento, "data de nascimento"]].filter(([f]) => f).map(([, t]) => t);
+}
+/* Abre a aba Mais já no cartão "Meus dados" */
+export function irParaMeusDados(ctx) {
+  ctx.irPara("mais");
+  setTimeout(() => {
+    const c = document.getElementById("meus-dados");
+    c?.scrollIntoView({ behavior: "smooth", block: "center" });
+    c?.querySelector("input")?.focus({ preventScroll: true });
+  }, 80);
+}
+
 const normalizar = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
 const PAPEIS = { pendente: "Aguardando", membro: "Membro", admin: "Dirigente / Tesouraria", bloqueado: "Bloqueado" };
 
@@ -53,6 +69,7 @@ export function render(el, ctx) {
   const pendentes = state.usuarios.filter((u) => u.papel === "pendente");
   // Ficha de Membro ligada a esta conta (criada pelo banco ao liberar o acesso)
   const meuMembro = state.membros.find((m) => m.perfilId === p.id);
+  const faltam = dadosFaltando(state);
   // Contas liberadas sem ficha de Membro (só acontece se a atualização do banco não rodou)
   const ligados = new Set(state.membros.map((m) => m.perfilId).filter(Boolean));
   const foraDaLista = state.usuarios.filter((u) => ["membro", "admin"].includes(u.papel) && !ligados.has(u.id));
@@ -66,8 +83,9 @@ export function render(el, ctx) {
       <button class="btn btn-claro btn-peq" data-editar-nome>Editar</button>
     </section>
 
-    <section class="cartao">
+    <section class="cartao${faltam.length ? " destaque-dados" : ""}" id="meus-dados">
       <h2>📇 Meus dados</h2>
+      ${faltam.length ? `<p class="falta-dados">⚠️ Falta preencher: <b>${faltam.join(" e ")}</b>.</p>` : ""}
       ${meuMembro ? `<form class="form" data-meus-dados novalidate>
         <div class="linha2">
           <label>WhatsApp<input name="whatsapp" type="tel" inputmode="tel" value="${esc(meuMembro.whatsapp || "")}" placeholder="(11) 99999-9999"></label>

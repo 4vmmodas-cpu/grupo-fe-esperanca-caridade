@@ -4,6 +4,7 @@ import {
 } from "./ui.js";
 import { novaLicao } from "./licoes.js";
 import { suporte } from "./push.js";
+import { dadosFaltando, irParaMeusDados } from "./mais.js";
 
 /* Converte um encontro para o formato de lembrete */
 const paraLembrete = (e) => ({
@@ -47,8 +48,12 @@ export function render(el, ctx) {
   try { dispensou = localStorage.getItem("aviso-push") === "x"; } catch {}
   const convidar = !dispensou && "Notification" in window && Notification.permission === "default" && suporte() === "ok";
 
+  const faltam = dadosFaltando(state);
+
   el.innerHTML = `
-    ${convidar ? `<div class="aviso-push"><span>🔔</span><p>Quer ser avisado antes de cada gira e estudo?</p>
+    ${faltam.length ? `<div class="aviso-push aviso-dados"><span>📇</span><p>Complete seu cadastro: falta <b>${faltam.join(" e ")}</b>.</p>
+      <button class="btn btn-primario btn-peq" data-completar>Completar</button></div>` : ""}
+    ${convidar && !faltam.length ?`<div class="aviso-push"><span>🔔</span><p>Quer ser avisado antes de cada gira e estudo?</p>
       <button class="btn btn-primario btn-peq" data-ir-push>Ativar</button><button class="btn-icone" data-fechar-push aria-label="Dispensar">✕</button></div>` : ""}
     <section class="cartao calendario">
       <div class="cal-topo">
@@ -65,6 +70,7 @@ export function render(el, ctx) {
       : `<p class="vazio">${diaSel ? "Nenhum encontro neste dia." : "Nenhum encontro agendado."}${admin ? " Toque em + para criar." : ""}</p>`}</div>
     ${admin ? `<button class="fab" data-novo aria-label="Novo encontro">+</button>` : ""}`;
 
+  el.querySelector("[data-completar]")?.addEventListener("click", () => irParaMeusDados(ctx));
   el.querySelector("[data-ir-push]")?.addEventListener("click", () => ctx.irPara("mais"));
   el.querySelector("[data-fechar-push]")?.addEventListener("click", () => {
     try { localStorage.setItem("aviso-push", "x"); } catch {}
