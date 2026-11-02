@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doações | Fé, Esperança e Caridade</title>
+  <meta name="description" content="Cadastre sua doação de alimentos, roupas, cobertores e itens de higiene. Buscamos na sua casa.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="assets/emblema.svg">
+  <meta name="theme-color" content="#c1272d">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-pagina="doacoes.html">
+  <header id="topo"></header>
+
+  <main>
+    <section class="cabecalho-pagina">
+      <div class="container">
+        <h1>Cadastre sua doação</h1>
+        <p>Preencha o formulário abaixo e nossa equipe entrará em contato pelo WhatsApp para combinar a retirada na sua casa. Toda ajuda faz diferença!</p>
+      </div>
+    </section>
+
+    <section class="secao">
+      <div class="container">
+        <div class="form-card">
+          <div id="alerta-form" class="alerta alerta-erro oculto" role="alert"></div>
+
+          <form id="form-doacao" novalidate>
+            <input class="hp" type="text" name="site" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+            <fieldset>
+              <legend>1. Seus dados</legend>
+              <div class="campos">
+                <div class="campo"><label for="nome">Nome completo <span class="obrig">*</span></label><input id="nome" name="nome" type="text" autocomplete="name" required></div>
+                <div class="campo metade"><label for="whatsapp">WhatsApp <span class="obrig">*</span></label><input id="whatsapp" name="whatsapp" type="tel" autocomplete="tel" placeholder="(11) 99999-9999" required></div>
+                <div class="campo metade"><label for="email">E-mail <span class="ajuda">(opcional)</span></label><input id="email" name="email" type="email" autocomplete="email"></div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>2. Endereço para retirada</legend>
+              <div class="campos">
+                <div class="campo terco"><label for="cep">CEP <span class="obrig">*</span></label><input id="cep" name="cep" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" required></div>
+                <div class="campo doisTercos"><label for="rua">Rua / Avenida <span class="obrig">*</span></label><input id="rua" name="rua" type="text" autocomplete="address-line1" required></div>
+                <div class="campo terco"><label for="numero">Número <span class="obrig">*</span></label><input id="numero" name="numero" type="text" required></div>
+                <div class="campo doisTercos"><label for="complemento">Complemento</label><input id="complemento" name="complemento" type="text" placeholder="Apto, bloco, casa dos fundos..."></div>
+                <div class="campo metade"><label for="bairro">Bairro <span class="obrig">*</span></label><input id="bairro" name="bairro" type="text" required></div>
+                <div class="campo metade"><label for="cidade">Cidade <span class="obrig">*</span></label><input id="cidade" name="cidade" type="text" autocomplete="address-level2" required></div>
+                <div class="campo"><label for="referencia">Ponto de referência</label><input id="referencia" name="referencia" type="text"></div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>3. O que você vai doar?</legend>
+              <div class="campos">
+                <div class="campo">
+                  <label>Tipos de item <span class="obrig">*</span> <span class="ajuda">(marque quantos quiser)</span></label>
+                  <div class="opcoes">
+                    <label class="opcao"><input type="checkbox" name="itens" value="Alimentos"> 🍚 Alimentos</label>
+                    <label class="opcao"><input type="checkbox" name="itens" value="Roupas"> 👕 Roupas</label>
+                    <label class="opcao"><input type="checkbox" name="itens" value="Cobertores"> 🛏️ Cobertores</label>
+                    <label class="opcao"><input type="checkbox" name="itens" value="Calçados"> 👟 Calçados</label>
+                    <label class="opcao"><input type="checkbox" name="itens" value="Higiene"> 🧼 Higiene</label>
+                    <label class="opcao"><input type="checkbox" name="itens" value="Brinquedos"> 🧸 Brinquedos</label>
+                    <label class="opcao"><input type="checkbox" name="itens" value="Outros"> 📦 Outros</label>
+                  </div>
+                </div>
+                <div class="campo"><label for="descricao">Descreva os itens e quantidades</label><textarea id="descricao" name="descricao" placeholder="Ex.: 5 kg de arroz, 2 cobertores de casal, 1 sacola de roupas infantis"></textarea></div>
+                <div class="campo oculto" id="bloco-tamanhos"><label for="tamanhos">Tamanhos das roupas/calçados</label><input id="tamanhos" name="tamanhos" type="text" placeholder="Ex.: adulto M e G, infantil 6 anos, calçado 38"></div>
+                <div class="campo"><label for="campanha">É para alguma campanha?</label><select id="campanha" name="campanha"><option value="">Doação geral</option></select></div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>4. Quando podemos buscar?</legend>
+              <div class="campos">
+                <div class="campo">
+                  <label>Dias disponíveis <span class="obrig">*</span></label>
+                  <div class="opcoes">
+                    <label class="opcao"><input type="checkbox" name="dias" value="Segunda"> Segunda</label>
+                    <label class="opcao"><input type="checkbox" name="dias" value="Terça"> Terça</label>
+                    <label class="opcao"><input type="checkbox" name="dias" value="Quarta"> Quarta</label>
+                    <label class="opcao"><input type="checkbox" name="dias" value="Quinta"> Quinta</label>
+                    <label class="opcao"><input type="checkbox" name="dias" value="Sexta"> Sexta</label>
+                    <label class="opcao"><input type="checkbox" name="dias" value="Sábado"> Sábado</label>
+                    <label class="opcao"><input type="checkbox" name="dias" value="Domingo"> Domingo</label>
+                  </div>
+                </div>
+                <div class="campo metade"><label for="periodo">Melhor período <span class="obrig">*</span></label>
+                  <select id="periodo" name="periodo" required>
+                    <option value="">Selecione</option>
+                    <option>Manhã (8h–12h)</option>
+                    <option>Tarde (12h–18h)</option>
+                    <option>Noite (18h–21h)</option>
+                    <option>Qualquer horário</option>
+                  </select>
+                </div>
+                <div class="campo"><label for="observacoes">Observações</label><textarea id="observacoes" name="observacoes" placeholder="Algo que a equipe precise saber? Ex.: tocar o interfone 12, tem cachorro, itens pesados..."></textarea></div>
+              </div>
+            </fieldset>
+
+            <div class="campo" style="margin-bottom:24px">
+              <label class="consentimento"><input type="checkbox" name="consentimento" required> <span>Autorizo o uso dos meus dados apenas para contato e organização da retirada da doação, conforme a Lei Geral de Proteção de Dados (LGPD). Os dados não serão compartilhados com terceiros. <span class="obrig">*</span></span></label>
+            </div>
+
+            <button type="submit" class="btn btn-dourado" style="width:100%;padding:16px;font-size:1.1rem">Enviar cadastro</button>
+          </form>
+
+          <div id="sucesso" class="sucesso oculto" role="status">
+            <div class="check">✓</div>
+            <h2>Gratidão, <span data-nome></span>!</h2>
+            <p>Seu cadastro foi recebido. Em breve nossa equipe vai falar com você pelo WhatsApp para combinar a retirada.</p>
+            <p class="ajuda" style="margin:18px 0">Quer agilizar? Envie um resumo pelo WhatsApp:</p>
+            <div class="botoes" style="justify-content:center">
+              <a class="btn" data-whats-resumo target="_blank" rel="noopener">Enviar resumo no WhatsApp</a>
+              <a class="btn btn-contorno" href="index.html">Voltar ao início</a>
+            </div>
+          </div>
+        </div>
+
+        <p class="centro ajuda" style="margin-top:24px">Prefere falar direto? <a data-whats="Olá! Gostaria de fazer uma doação.">Chame no WhatsApp</a> ou traga sua doação nos dias de gira.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer id="rodape"></footer>
+  <script src="js/config.js"></script>
+  <script src="js/dados.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
