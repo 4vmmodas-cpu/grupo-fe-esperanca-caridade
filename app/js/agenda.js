@@ -140,6 +140,7 @@ function formulario(ctx, ev, dataInicial) {
       <label>Onde (casa de quem?)
         <select name="anfitriao"><option value="">— Outro local / terreiro —</option>${opcoesMembros}</select>
       </label>
+      <p class="suave dica" style="margin-top:-8px">${state.membros.length} membro(s) na lista. Não achou alguém? <button type="button" class="link" data-ir-membros>Cadastrar em Membros</button></p>
       <label>Endereço<input name="local" value="${esc(ev.local || "")}" placeholder="Preenchido pelo cadastro do membro"></label>
       <label>Observações<textarea name="obs" rows="2" placeholder="Ex.: levar vela branca, roupa branca">${esc(ev.obs || "")}</textarea></label>
       ${novo ? `
@@ -160,6 +161,7 @@ function formulario(ctx, ev, dataInicial) {
   const membro = (id) => state.membros.find((m) => m.id === id);
   let localAuto = !ev.local || ev.local === membro(ev.anfitriaoId)?.endereco;
   f.anfitriao.value = ev.anfitriaoId || "";
+  el.querySelector("[data-ir-membros]").addEventListener("click", () => { fechar(); ctx.irPara("membros"); });
   f.local.addEventListener("input", () => (localAuto = false));
   f.anfitriao.addEventListener("change", () => {
     if (localAuto || !f.local.value) { f.local.value = membro(f.anfitriao.value)?.endereco || ""; localAuto = true; }

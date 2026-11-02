@@ -44,12 +44,16 @@ async function cartaoPush(box) {
   });
 }
 
+const normalizar = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
 const PAPEIS = { pendente: "Aguardando", membro: "Membro", admin: "Dirigente / Tesouraria", bloqueado: "Bloqueado" };
 
 export function render(el, ctx) {
   const { state, admin, db } = ctx;
   const p = state.perfil;
   const pendentes = state.usuarios.filter((u) => u.papel === "pendente");
+  // Contas liberadas que ainda não estão na lista de Membros (comparando pelo nome)
+  const nomesMembros = new Set(state.membros.map((m) => normalizar(m.nome)));
+  const foraDaLista = state.usuarios.filter((u) => ["membro", "admin"].includes(u.papel) && !nomesMembros.has(normalizar(u.nome)));
   const instalado = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
@@ -79,6 +83,9 @@ export function render(el, ctx) {
           ${u.id === p.id ? `<span class="suave">você</span>` : `<select data-papel="${u.id}" aria-label="Acesso de ${esc(u.nome)}">
             ${Object.entries(PAPEIS).map(([v, t]) => `<option value="${v}"${u.papel === v ? " selected" : ""}>${t}</option>`).join("")}</select>`}
         </div>`).join("")}</div>
+      ${foraDaLista.length ? `<div class="aviso-push" style="margin-top:12px"><span>👥</span>
+        <p>${foraDaLista.length} pessoa(s) com acesso ainda não estão na lista de <b>Membros</b> (e por isso não aparecem na Agenda): ${esc(foraDaLista.map((u) => u.nome.split(" ")[0]).join(", "))}.</p>
+        <button class="btn btn-primario btn-peq" data-importar>Incluir</button></div>` : ""}
     </section>` : ""}
 
     <section class="cartao">
@@ -106,9 +113,25 @@ export function render(el, ctx) {
       if (await salvando(f.querySelector("[type=submit]"), () => db.atualizar("perfis", p.id, { nome }))) { fechar(); toast("Nome atualizado!"); }
     };
   };
+  el.querySelector("[data-importar]")?.addEventListener("click", async (e) => {
+    e.target.disabled = true;
+    try {
+      await db.inserir("membros", foraDaLista.map((u) => ({ nome: u.nome, funcao: u.papel === "admin" ? "Dirigente" : "Membro" })));
+      toast(`${foraDaLista.length} pessoa(s) incluída(s) em Membros. Complete o WhatsApp, aniversário e endereço por lá.`);
+    } catch { toast("Não foi possível incluir.", "erro"); e.target.disabled = false; }
+  });
   el.querySelectorAll("[data-papel]").forEach((s) => s.addEventListener("change", async () => {
     const u = state.usuarios.find((x) => x.id === s.dataset.papel);
-    try { await db.atualizar("perfis", u.id, { papel: s.value }); toast(`${u.nome.split(" ")[0]}: ${PAPEIS[s.value]}`); }
+    try {
+      await db.atualizar("perfis", u.id, { papel: s.value });
+      let extra = "";
+      // Ao liberar, já coloca a pessoa na lista de Membros (se ainda não estiver)
+      if (["membro", "admin"].includes(s.value) && !nomesMembros.has(normalizar(u.nome))) {
+        await db.inserir("membros", { nome: u.nome, funcao: s.value === "admin" ? "Dirigente" : "Membro" });
+        extra = " e incluído(a) em Membros";
+      }
+      toast(`${u.nome.split(" ")[0]}: ${PAPEIS[s.value]}${extra}`);
+    }
     catch { toast("Sem permissão para alterar.", "erro"); s.value = u.papel; }
   }));
 }
