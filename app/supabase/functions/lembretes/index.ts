@@ -7,11 +7,22 @@ import webpush from "npm:web-push@3.6.7";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-webpush.setVapidDetails(
-  "https://4vmmodas-cpu.github.io/grupo-fe-esperanca-caridade/app/",
-  Deno.env.get("VAPID_PUBLIC_KEY")!,
-  Deno.env.get("VAPID_PRIVATE_KEY")!,
-);
+
+/* Configura as chaves só na hora de usar, para conseguir avisar se estiverem faltando */
+let vapidOk = false;
+function configurarVapid(): string | null {
+  if (vapidOk) return null;
+  const pub = (Deno.env.get("VAPID_PUBLIC_KEY") ?? "").trim();
+  const priv = (Deno.env.get("VAPID_PRIVATE_KEY") ?? "").trim();
+  if (!pub || !priv) return "Faltam os Secrets VAPID_PUBLIC_KEY e/ou VAPID_PRIVATE_KEY (Edge Functions > Secrets).";
+  try {
+    webpush.setVapidDetails("https://4vmmodas-cpu.github.io/grupo-fe-esperanca-caridade/app/", pub, priv);
+    vapidOk = true;
+    return null;
+  } catch (e) {
+    return "Chaves VAPID inválidas: " + (e as Error).message;
+  }
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -44,6 +55,17 @@ async function enviar(s: Insc, msg: { titulo: string; corpo?: string; url?: stri
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  try {
+    return await atender(req);
+  } catch (e) {
+    console.error(e);
+    return resposta({ erro: "Erro interno: " + (e as Error).message }, 500);
+  }
+});
+
+async function atender(req: Request): Promise<Response> {
+  const problema = configurarVapid();
+  if (problema) return resposta({ erro: problema }, 500);
   const corpo = await req.json().catch(() => ({}));
 
   // ---- Teste pedido pelo app: envia só para os aparelhos de quem chamou ----
@@ -75,4 +97,4 @@ Deno.serve(async (req) => {
   // limpeza ocasional
   if (new Date().getUTCMinutes() < 5) await sb.rpc("limpar_push_enviados");
   return resposta({ pendentes: pendentes?.length ?? 0, enviados: ok });
-});
+}
