@@ -108,7 +108,7 @@ function cartaoEvento(e, admin, qtdLicoes = 0) {
         <button class="btn btn-claro btn-peq" data-lembrar="${e.id}">🔔 Lembrete</button>
         <button class="btn btn-whats btn-peq" data-avisar="${e.id}">Avisar no WhatsApp</button>
         ${qtdLicoes ? `<button class="btn btn-claro btn-peq" data-ver-licoes>📜 ${qtdLicoes} lição(ões)</button>` : ""}
-        ${admin && e.tipo === "Gira" && e.data <= hojeISO() ? `<button class="btn btn-claro btn-peq" data-licao="${e.id}">+ Lição</button>` : ""}
+        ${e.tipo === "Gira" && e.data <= hojeISO() ? `<button class="btn btn-claro btn-peq" data-licao="${e.id}">+ Lição</button>` : ""}
         ${admin ? `<button class="btn btn-claro btn-peq" data-editar="${e.id}">Editar</button>` : ""}
       </div>
     </div></article>`;

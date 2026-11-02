@@ -8,7 +8,7 @@ Dados e login ficam no **Supabase** (plano grátis), e a hospedagem no **GitHub 
 | Aba | Todos os membros | Dirigentes / Tesouraria |
 |---|---|---|
 | **Agenda** | Calendário, casa e endereço (com mapa), lembrete no celular, avisar no WhatsApp | Criar e editar encontros, repetir semanalmente com **rodízio de casas** |
-| **Lições** | Ver as lições, marcar **✓ Fiz**, lembrete (pode repetir todo dia até o prazo) | Registrar: gira, entidade, lição, para quem e prazo |
+| **Lições** | Ver, **registrar** (e editar as próprias), marcar **✓ Fiz**, lembrete, enviar no WhatsApp | Editar ou excluir qualquer lição |
 | **Membros** | Lista com WhatsApp e aniversariantes do mês | Cadastrar e editar membros |
 | **Finanças** | Resumo: entradas, saídas e saldo | Lançamentos com comprovante (foto/PDF) e **relatório em PDF** para o WhatsApp |
 | **Mais** | Perfil, instalar app, trocar senha | **Liberar acessos** de quem se cadastrou |

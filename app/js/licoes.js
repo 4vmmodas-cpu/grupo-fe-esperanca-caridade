@@ -5,6 +5,28 @@ let entidadeSel = "";
 
 const minhaFeita = (l, uid) => (l.concluidas || []).includes(uid);
 const venceu = (l) => l.prazo && l.prazo < hojeISO();
+const podeEditar = (l, uid, admin) => admin || l.criadoPorId === uid;
+
+/* Texto pronto para o grupo do WhatsApp */
+export function textoWhats(l) {
+  const cabecalho = [`📜 *Lição – Gira de ${dataBR(l.data)}*`, l.entidade ? `🕯️ *${l.entidade}*` : ""].filter(Boolean);
+  const detalhes = [
+    `👥 ${l.paraTodos !== false ? "Para todos" : "Para: " + (l.paraNomes || []).join(", ")}`,
+    l.prazo ? `⏳ Prazo: até ${dataLonga(l.prazo)}` : ""
+  ].filter(Boolean);
+  return [...cabecalho, "", l.texto, "", ...detalhes, "", "Marque ✓ *Fiz* no app quando concluir 🙏", "_Fé, Esperança e Caridade_"].join("\n");
+}
+
+async function copiar(texto) {
+  try { await navigator.clipboard.writeText(texto); return true; }
+  catch {
+    // Plano B para navegadores sem permissão de área de transferência
+    const t = document.createElement("textarea");
+    t.value = texto; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.appendChild(t); t.select();
+    const ok = document.execCommand("copy"); t.remove(); return ok;
+  }
+}
 
 export function render(el, ctx) {
   const { state, admin } = ctx;
@@ -36,8 +58,8 @@ export function render(el, ctx) {
         ${entidades.map((e) => `<option${e === entidadeSel ? " selected" : ""}>${esc(e)}</option>`).join("")}</select>` : ""}
     </div>
     <div class="lista-licoes">${lista.length ? lista.map((l) => cartao(l, uid, admin)).join("")
-      : `<p class="vazio">${filtro === "pendentes" ? "Nenhuma lição pendente. 🙏" : "Nenhuma lição por aqui."}${admin && !todas.length ? " Toque em + para registrar a primeira." : ""}</p>`}</div>
-    ${admin ? `<button class="fab" data-nova aria-label="Nova lição">+</button>` : ""}`;
+      : `<p class="vazio">${filtro === "pendentes" ? "Nenhuma lição pendente. 🙏" : "Nenhuma lição por aqui."}${!todas.length ? " Toque em + para registrar a primeira." : ""}</p>`}</div>
+    <button class="fab" data-nova aria-label="Nova lição">+</button>`;
 
   el.querySelectorAll("[data-filtro]").forEach((b) => b.onclick = () => { filtro = b.dataset.filtro; render(el, ctx); });
   el.querySelector(".filtro-entidade")?.addEventListener("change", (e) => { entidadeSel = e.target.value; render(el, ctx); });
@@ -57,6 +79,10 @@ export function render(el, ctx) {
       { avisoPadrao: 0, escolherHora: true, podeRepetirAte: l.prazo && l.prazo > hojeISO() ? l.prazo : "" });
   });
   el.querySelectorAll("[data-editar]").forEach((b) => b.onclick = () => novaLicao(ctx, null, achar(b.dataset.editar)));
+  el.querySelectorAll("[data-whats]").forEach((b) => b.onclick = () =>
+    window.open("https://wa.me/?text=" + encodeURIComponent(textoWhats(achar(b.dataset.whats))), "_blank"));
+  el.querySelectorAll("[data-copiar]").forEach((b) => b.onclick = async () =>
+    toast((await copiar(textoWhats(achar(b.dataset.copiar)))) ? "Lição copiada! Cole no grupo do WhatsApp." : "Não foi possível copiar.", "ok"));
 }
 
 function cartao(l, uid, admin) {
@@ -71,11 +97,14 @@ function cartao(l, uid, admin) {
       <span>👥 ${l.paraTodos !== false ? "Para todos" : "Para: " + esc((l.paraNomes || []).join(", "))}</span>
       ${l.prazo ? `<span class="${venceu(l) && !feita ? "atrasada" : ""}">⏳ ${venceu(l) ? "Prazo era" : "Até"} ${dataLonga(l.prazo)}</span>` : ""}
       ${qtd ? `<span>✓ ${qtd} concluíram</span>` : ""}
+      ${l.criadoPor ? `<span>✍️ ${esc(l.criadoPor.split(" ")[0])}</span>` : ""}
     </div>
     <div class="ev-acoes">
       <button class="btn btn-peq ${feita ? "btn-feito" : "btn-primario"}" data-fiz="${l.id}">${feita ? "✓ Feito (desfazer)" : "✓ Fiz"}</button>
       ${feita ? "" : `<button class="btn btn-claro btn-peq" data-lembrar="${l.id}">🔔 Lembrete</button>`}
-      ${admin ? `<button class="btn btn-claro btn-peq" data-editar="${l.id}">Editar</button>` : ""}
+      <button class="btn btn-whats btn-peq" data-whats="${l.id}">📲 WhatsApp</button>
+      <button class="btn btn-claro btn-peq" data-copiar="${l.id}">📋 Copiar</button>
+      ${podeEditar(l, uid, admin) ? `<button class="btn btn-claro btn-peq" data-editar="${l.id}">Editar</button>` : ""}
     </div>
   </article>`;
 }
@@ -145,10 +174,26 @@ export function novaLicao(ctx, evento = null, licao = null) {
       paraTodos, para, paraNomes: para.map((id) => state.membros.find((m) => m.id === id)?.nome).filter(Boolean),
       prazo: f.prazo.value
     };
-    const ok = await salvando(f.querySelector("[type=submit]"), () => novo
-      ? db.inserir("licoes", { ...dados, criadoPor: state.perfil.nome })
-      : db.atualizar("licoes", licao.id, dados));
-    if (ok) { fechar(); toast(novo ? "Lição registrada!" : "Lição atualizada!"); }
+    let salva = null;
+    const ok = await salvando(f.querySelector("[type=submit]"), async () => {
+      if (novo) [salva] = await db.inserir("licoes", { ...dados, criadoPor: state.perfil.nome, criadoPorId: state.user.id });
+      else await db.atualizar("licoes", licao.id, dados);
+    });
+    if (!ok) return;
+    fechar();
+    if (!novo) return toast("Lição atualizada!");
+    // Oferece mandar no grupo logo depois de registrar
+    const m = abrirModal("Lição registrada! 🙏", `
+      <p>Quer avisar o grupo agora?</p>
+      <div class="acoes-form">
+        <button class="btn btn-claro" data-copiar-nova>📋 Copiar</button>
+        <button class="btn btn-whats" data-whats-nova>📲 Enviar no WhatsApp</button>
+      </div>
+      <button class="link" data-depois style="margin-top:8px">Agora não</button>`);
+    const texto = textoWhats(salva || dados);
+    m.el.querySelector("[data-whats-nova]").onclick = () => { window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank"); m.fechar(); };
+    m.el.querySelector("[data-copiar-nova]").onclick = async () => { toast((await copiar(texto)) ? "Copiada! Cole no grupo do WhatsApp." : "Não foi possível copiar."); m.fechar(); };
+    m.el.querySelector("[data-depois]").onclick = m.fechar;
   };
   el.querySelector("[data-excluir]")?.addEventListener("click", async () => {
     if (!(await confirmar("Excluir esta lição?"))) return;
