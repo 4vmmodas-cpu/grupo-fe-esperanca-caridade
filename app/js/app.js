@@ -1,5 +1,5 @@
 import * as db from "./db.js";
-import { esc, toast, GRUPO } from "./ui.js";
+import { esc, toast, GRUPO, mascaraTelefone, soDigitos } from "./ui.js";
 import * as agenda from "./agenda.js";
 import * as membros from "./membros.js";
 import * as financeiro from "./financeiro.js";
@@ -64,7 +64,9 @@ function telaLogin(modo = "entrar") {
     <img src="assets/logo.jpg" alt="Logo ${esc(GRUPO)}" class="logo-login">
     <h1>${cadastro ? "Criar conta" : "Bem-vindo(a)"}</h1>
     <p class="suave">${cadastro ? "Depois do cadastro, um dirigente libera seu acesso." : "Agenda, lições, membros e finanças do grupo."}</p>
-    ${cadastro ? `<label>Nome completo<input name="nome" autocomplete="name" required></label>` : ""}
+    ${cadastro ? `<label>Nome completo<input name="nome" autocomplete="name" required></label>
+    <label>WhatsApp<input name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 99999-9999" required></label>
+    <label>Data de nascimento<input name="nascimento" type="date" autocomplete="bday"></label>` : ""}
     <label>E-mail<input name="email" type="email" autocomplete="email" required></label>
     <label>Senha<input name="senha" type="password" autocomplete="${cadastro ? "new-password" : "current-password"}" minlength="6" required></label>
     <p class="erro-form" hidden></p>
@@ -75,6 +77,7 @@ function telaLogin(modo = "entrar") {
   const form = raiz.querySelector("form"), erro = form.querySelector(".erro-form");
   const mostraErro = (m) => { erro.textContent = m; erro.hidden = false; };
   form.querySelector("[data-acao=trocar]").onclick = () => telaLogin(cadastro ? "entrar" : "cadastro");
+  if (cadastro) mascaraTelefone(form.whatsapp);
   form.querySelector("[data-acao=esqueci]")?.addEventListener("click", async () => {
     const email = form.email.value.trim();
     if (!email) return mostraErro("Digite seu e-mail acima e toque de novo em “Esqueci minha senha”.");
@@ -85,12 +88,14 @@ function telaLogin(modo = "entrar") {
     ev.preventDefault(); erro.hidden = true;
     const email = form.email.value.trim(), senha = form.senha.value;
     if (cadastro && form.nome.value.trim().length < 3) return mostraErro("Informe seu nome completo.");
+    if (cadastro && soDigitos(form.whatsapp.value).length < 10) return mostraErro("Informe o WhatsApp com DDD.");
     if (!email || !senha) return mostraErro("Preencha e-mail e senha.");
     if (senha.length < 6) return mostraErro("A senha precisa ter pelo menos 6 caracteres.");
     const btn = form.querySelector("[type=submit]"); btn.disabled = true;
     try {
       if (cadastro) {
-        const r = await db.cadastrar(form.nome.value.trim(), email, senha);
+        const r = await db.cadastrar(form.nome.value.trim(), email, senha,
+          { whatsapp: form.whatsapp.value.trim(), nascimento: form.nascimento.value });
         if (r.precisaConfirmar) cartaoMensagem("Confirme seu e-mail 📩", `Enviamos um link de confirmação para <b>${esc(email)}</b>. Abra o e-mail, toque no link e depois entre com sua senha.`);
       } else {
         await db.entrar(email, senha);

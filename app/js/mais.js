@@ -1,4 +1,4 @@
-import { esc, iniciais, toast, abrirModal, salvando, confirmar } from "./ui.js";
+import { esc, iniciais, toast, abrirModal, salvando, confirmar, mascaraTelefone, soDigitos } from "./ui.js";
 import * as push from "./push.js";
 
 /* Cartão de notificações (carrega o estado deste aparelho) */
@@ -51,9 +51,11 @@ export function render(el, ctx) {
   const { state, admin, db } = ctx;
   const p = state.perfil;
   const pendentes = state.usuarios.filter((u) => u.papel === "pendente");
-  // Contas liberadas que ainda não estão na lista de Membros (comparando pelo nome)
-  const nomesMembros = new Set(state.membros.map((m) => normalizar(m.nome)));
-  const foraDaLista = state.usuarios.filter((u) => ["membro", "admin"].includes(u.papel) && !nomesMembros.has(normalizar(u.nome)));
+  // Ficha de Membro ligada a esta conta (criada pelo banco ao liberar o acesso)
+  const meuMembro = state.membros.find((m) => m.perfilId === p.id);
+  // Contas liberadas sem ficha de Membro (só acontece se a atualização do banco não rodou)
+  const ligados = new Set(state.membros.map((m) => m.perfilId).filter(Boolean));
+  const foraDaLista = state.usuarios.filter((u) => ["membro", "admin"].includes(u.papel) && !ligados.has(u.id));
   const instalado = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
@@ -62,6 +64,18 @@ export function render(el, ctx) {
       <span class="avatar grande">${esc(iniciais(p.nome))}</span>
       <div><h2>${esc(p.nome)}</h2><p class="suave">${esc(p.email)} · ${PAPEIS[p.papel]}</p></div>
       <button class="btn btn-claro btn-peq" data-editar-nome>Editar</button>
+    </section>
+
+    <section class="cartao">
+      <h2>📇 Meus dados</h2>
+      ${meuMembro ? `<form class="form" data-meus-dados novalidate>
+        <div class="linha2">
+          <label>WhatsApp<input name="whatsapp" type="tel" inputmode="tel" value="${esc(meuMembro.whatsapp || "")}" placeholder="(11) 99999-9999"></label>
+          <label>Data de nascimento<input name="nascimento" type="date" value="${esc(meuMembro.nascimento || "")}"></label>
+        </div>
+        <label>Endereço <span class="suave">(para quando receber encontros em casa)</span><input name="endereco" value="${esc(meuMembro.endereco || "")}" placeholder="Rua, número – bairro, cidade"></label>
+        <div class="acoes-form"><button class="btn btn-primario" type="submit">Salvar meus dados</button></div>
+      </form>` : `<p class="suave">Sua ficha de membro ainda não foi criada. Peça a um dirigente para conferir seu acesso.</p>`}
     </section>
 
     ${instalado ? "" : `<section class="cartao">
@@ -84,7 +98,7 @@ export function render(el, ctx) {
             ${Object.entries(PAPEIS).map(([v, t]) => `<option value="${v}"${u.papel === v ? " selected" : ""}>${t}</option>`).join("")}</select>`}
         </div>`).join("")}</div>
       ${foraDaLista.length ? `<div class="aviso-push" style="margin-top:12px"><span>👥</span>
-        <p>${foraDaLista.length} pessoa(s) com acesso ainda não estão na lista de <b>Membros</b> (e por isso não aparecem na Agenda): ${esc(foraDaLista.map((u) => u.nome.split(" ")[0]).join(", "))}.</p>
+        <p>${foraDaLista.length} pessoa(s) com acesso ainda sem ficha em <b>Membros</b> (não aparecem na Agenda): ${esc(foraDaLista.map((u) => u.nome.split(" ")[0]).join(", "))}.</p>
         <button class="btn btn-primario btn-peq" data-importar>Incluir</button></div>` : ""}
     </section>` : ""}
 
@@ -113,24 +127,37 @@ export function render(el, ctx) {
       if (await salvando(f.querySelector("[type=submit]"), () => db.atualizar("perfis", p.id, { nome }))) { fechar(); toast("Nome atualizado!"); }
     };
   };
+  // Meus dados: a própria pessoa atualiza WhatsApp, aniversário e endereço
+  const fm = el.querySelector("[data-meus-dados]");
+  if (fm) {
+    mascaraTelefone(fm.whatsapp);
+    fm.onsubmit = async (e) => {
+      e.preventDefault();
+      const tel = soDigitos(fm.whatsapp.value);
+      if (tel && tel.length < 10) return toast("WhatsApp precisa de DDD + número.", "erro");
+      const dados = { whatsapp: fm.whatsapp.value.trim(), nascimento: fm.nascimento.value, endereco: fm.endereco.value.trim() };
+      if (await salvando(fm.querySelector("[type=submit]"), () => db.atualizar("membros", meuMembro.id, dados))) toast("Seus dados foram salvos!");
+    };
+  }
+  // Plano B: cria a ficha (ligada à conta) para quem ficou sem
   el.querySelector("[data-importar]")?.addEventListener("click", async (e) => {
     e.target.disabled = true;
     try {
-      await db.inserir("membros", foraDaLista.map((u) => ({ nome: u.nome, funcao: u.papel === "admin" ? "Dirigente" : "Membro" })));
-      toast(`${foraDaLista.length} pessoa(s) incluída(s) em Membros. Complete o WhatsApp, aniversário e endereço por lá.`);
-    } catch { toast("Não foi possível incluir.", "erro"); e.target.disabled = false; }
+      const nomes = new Map(state.membros.filter((m) => !m.perfilId).map((m) => [normalizar(m.nome), m]));
+      for (const u of foraDaLista) {
+        const existente = nomes.get(normalizar(u.nome));
+        if (existente) await db.atualizar("membros", existente.id, { perfilId: u.id });
+        else await db.inserir("membros", { nome: u.nome, funcao: u.papel === "admin" ? "Dirigente" : "Membro", perfilId: u.id });
+      }
+      toast(`${foraDaLista.length} pessoa(s) incluída(s) em Membros.`);
+    } catch (err) { console.error(err); toast("Não foi possível incluir. Rode a atualização supabase-membros-v2.sql.", "erro"); e.target.disabled = false; }
   });
   el.querySelectorAll("[data-papel]").forEach((s) => s.addEventListener("change", async () => {
     const u = state.usuarios.find((x) => x.id === s.dataset.papel);
     try {
       await db.atualizar("perfis", u.id, { papel: s.value });
-      let extra = "";
-      // Ao liberar, já coloca a pessoa na lista de Membros (se ainda não estiver)
-      if (["membro", "admin"].includes(s.value) && !nomesMembros.has(normalizar(u.nome))) {
-        await db.inserir("membros", { nome: u.nome, funcao: s.value === "admin" ? "Dirigente" : "Membro" });
-        extra = " e incluído(a) em Membros";
-      }
-      toast(`${u.nome.split(" ")[0]}: ${PAPEIS[s.value]}${extra}`);
+      // ao liberar, o banco cria a ficha de Membro com WhatsApp e aniversário do cadastro
+      toast(`${u.nome.split(" ")[0]}: ${PAPEIS[s.value]}${["membro", "admin"].includes(s.value) ? " · ficha criada em Membros" : ""}`);
     }
     catch { toast("Sem permissão para alterar.", "erro"); s.value = u.papel; }
   }));

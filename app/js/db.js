@@ -34,8 +34,9 @@ const urlApp = () => location.origin + location.pathname.replace(/index\.html$/,
 
 /* ---------- Login ---------- */
 export async function entrar(email, senha) { checar(await sb.auth.signInWithPassword({ email, password: senha })); }
-export async function cadastrar(nome, email, senha) {
-  const d = checar(await sb.auth.signUp({ email, password: senha, options: { data: { nome }, emailRedirectTo: urlApp() } }));
+/* extras (whatsapp, nascimento) vão junto com o cadastro e preenchem a ficha de Membro na liberação */
+export async function cadastrar(nome, email, senha, extras = {}) {
+  const d = checar(await sb.auth.signUp({ email, password: senha, options: { data: { nome, ...extras }, emailRedirectTo: urlApp() } }));
   return { precisaConfirmar: !d.session };
 }
 export async function recuperarSenha(email) { checar(await sb.auth.resetPasswordForEmail(email, { redirectTo: urlApp() })); }
