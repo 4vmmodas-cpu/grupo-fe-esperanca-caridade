@@ -5,12 +5,14 @@ import * as membros from "./membros.js";
 import * as financeiro from "./financeiro.js";
 import * as mais from "./mais.js";
 import * as licoes from "./licoes.js";
+import * as estudos from "./estudos.js";
 
 const raiz = document.getElementById("app");
-const VIEWS = { agenda, licoes, membros, financeiro, mais };
+const VIEWS = { agenda, licoes, estudos, membros, financeiro, mais };
 const ABAS = [
   ["agenda", "Agenda", '<path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>'],
   ["licoes", "Lições", '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zM9 7h7M9 11h5"/>'],
+  ["estudos", "Estudos", '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2zM22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>'],
   ["membros", "Membros", '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'],
   ["financeiro", "Finanças", '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'],
   ["mais", "Mais", '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>']
@@ -19,7 +21,7 @@ const ABAS = [
 export const state = {
   user: undefined,          // undefined = carregando, null = deslogado
   perfil: null,
-  membros: [], eventos: [], licoes: [], lancamentos: [], resumos: {}, usuarios: [],
+  membros: [], eventos: [], licoes: [], livros: [], estudos: [], lancamentos: [], resumos: {}, usuarios: [],
   aba: lerAba()
 };
 let assinaturas = [];
@@ -178,6 +180,8 @@ function iniciarDados() {
   assinaturas.push(ouvir("membros", "membros", porNome));
   assinaturas.push(ouvir("eventos", "eventos", (a, b) => (a.data + (a.hora || "")).localeCompare(b.data + (b.hora || ""))));
   assinaturas.push(ouvir("licoes", "licoes", (a, b) => b.data.localeCompare(a.data)));
+  assinaturas.push(ouvir("livros", "livros"));
+  assinaturas.push(ouvir("estudos", "estudos"));
   recarregarResumos();
   const aoVoltar = () => document.visibilityState === "visible" && recarregarResumos();
   document.addEventListener("visibilitychange", aoVoltar);
@@ -189,7 +193,7 @@ function iniciarDados() {
 }
 function pararDados() {
   assinaturas.forEach((u) => u()); assinaturas = [];
-  Object.assign(state, { membros: [], eventos: [], licoes: [], lancamentos: [], resumos: {}, usuarios: [] });
+  Object.assign(state, { membros: [], eventos: [], licoes: [], livros: [], estudos: [], lancamentos: [], resumos: {}, usuarios: [] });
 }
 
 let pararPerfil = null, papelAtual = null, uidAtual = null;

@@ -3,6 +3,7 @@ import {
   linkMapa, abrirModal, confirmar, toast, salvando, abrirLembrete
 } from "./ui.js";
 import { novaLicao } from "./licoes.js";
+import { novoRegistro } from "./estudos.js";
 import { suporte } from "./push.js";
 import { dadosFaltando, irParaMeusDados } from "./mais.js";
 
@@ -89,6 +90,7 @@ export function render(el, ctx) {
   el.querySelectorAll("[data-lembrar]").forEach((b) => b.onclick = () => abrirLembrete([paraLembrete(state.eventos.find((e) => e.id === b.dataset.lembrar))]));
   el.querySelector("[data-lembrar-todos]")?.addEventListener("click", () => abrirLembrete(lista.map(paraLembrete)));
   el.querySelectorAll("[data-licao]").forEach((b) => b.onclick = () => novaLicao(ctx, state.eventos.find((e) => e.id === b.dataset.licao)));
+  el.querySelectorAll("[data-resumo]").forEach((b) => b.onclick = () => novoRegistro(ctx, { evento: state.eventos.find((e) => e.id === b.dataset.resumo) }));
   el.querySelectorAll("[data-ver-licoes]").forEach((b) => b.onclick = () => { state.aba = "licoes"; ctx.irPara("licoes"); });
 }
 
@@ -109,6 +111,7 @@ function cartaoEvento(e, admin, qtdLicoes = 0) {
         <button class="btn btn-whats btn-peq" data-avisar="${e.id}">Avisar no WhatsApp</button>
         ${qtdLicoes ? `<button class="btn btn-claro btn-peq" data-ver-licoes>📜 ${qtdLicoes} lição(ões)</button>` : ""}
         ${e.tipo === "Gira" && e.data <= hojeISO() ? `<button class="btn btn-claro btn-peq" data-licao="${e.id}">+ Lição</button>` : ""}
+        ${e.tipo === "Estudo" && e.data <= hojeISO() ? `<button class="btn btn-claro btn-peq" data-resumo="${e.id}">📚 + Resumo</button>` : ""}
         ${admin ? `<button class="btn btn-claro btn-peq" data-editar="${e.id}">Editar</button>` : ""}
       </div>
     </div></article>`;

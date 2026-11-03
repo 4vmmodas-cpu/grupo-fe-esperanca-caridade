@@ -1,6 +1,6 @@
 # App – Fé, Esperança e Caridade
 
-App de celular (PWA) para **agenda de giras e estudos**, **lições das entidades**, **membros** e **finanças** do grupo.
+App de celular (PWA) para **agenda de giras e estudos**, **lições das entidades**, **resumos dos estudos de livros**, **membros** e **finanças** do grupo.
 Instala direto pelo navegador, sem loja de aplicativos, e funciona em Android e iPhone.
 Dados e login ficam no **Supabase** (plano grátis), e a hospedagem no **GitHub Pages**.
 
@@ -9,6 +9,7 @@ Dados e login ficam no **Supabase** (plano grátis), e a hospedagem no **GitHub 
 |---|---|---|
 | **Agenda** | Calendário, casa e endereço (com mapa), lembrete no celular, avisar no WhatsApp | Criar e editar encontros, repetir semanalmente com **rodízio de casas** |
 | **Lições** | Ver, **registrar** (e editar as próprias), marcar **✓ Fiz**, lembrete, enviar no WhatsApp | Editar ou excluir qualquer lição |
+| **Estudos** | Ver os livros e os resumos de cada encontro, **cadastrar livros e registrar o estudo do dia** (capítulos, resumo, presentes), enviar no WhatsApp, **relatório em PDF** | Editar ou excluir qualquer registro; excluir livros |
 | **Membros** | Lista com WhatsApp e aniversariantes do mês | Cadastrar e editar membros |
 | **Finanças** | Resumo: entradas, saídas e saldo | Lançamentos com comprovante (foto/PDF) e **relatório em PDF** para o WhatsApp |
 | **Mais** | Perfil, instalar app, trocar senha | **Liberar acessos** de quem se cadastrou |
@@ -46,6 +47,12 @@ O repositório no GitHub publica sozinho pelo GitHub Pages a cada atualização:
 - iPhone (Safari): Compartilhar ⬆️ > *Adicionar à Tela de Início*.
 
 ---
+
+## Estudos (livros)
+1. **SQL Editor:** rode `supabase-estudos.sql` uma vez.
+2. Na aba **Estudos**, toque em **+** e cadastre o livro.
+3. A cada encontro, abra o livro e toque em **+ Estudo do dia**. Informe a data, os capítulos, o resumo e quem esteve presente. Encontros do tipo **Estudo** na Agenda também ganham o botão **📚 + Resumo**.
+4. Em **📄 Relatório PDF**, escolha o período (tudo, este mês ou datas). O relatório pode ser de um livro ou de todos.
 
 ## Lembretes
 O botão **🔔 Lembrete** salva o encontro ou a lição na agenda do próprio celular, com o aviso escolhido (ex.: 2 horas antes). O celular avisa mesmo com o app fechado.

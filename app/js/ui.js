@@ -238,3 +238,14 @@ export function abrirLembrete(eventos, { avisoPadrao = 120, escolherHora = false
     toast("Abra o arquivo para adicionar à sua agenda.");
   };
 }
+
+/* Copia texto (com plano B para navegadores sem permissão de área de transferência) */
+export async function copiar(texto) {
+  try { await navigator.clipboard.writeText(texto); return true; }
+  catch {
+    const t = document.createElement("textarea");
+    t.value = texto; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.appendChild(t); t.select();
+    const ok = document.execCommand("copy"); t.remove(); return ok;
+  }
+}

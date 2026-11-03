@@ -1,4 +1,4 @@
-import { esc, hojeISO, dataBR, dataLonga, somaDias, abrirModal, confirmar, toast, salvando, abrirLembrete } from "./ui.js";
+import { esc, hojeISO, dataBR, dataLonga, somaDias, abrirModal, confirmar, toast, salvando, abrirLembrete, copiar } from "./ui.js";
 
 let filtro = "pendentes";   // pendentes | feitas | todas
 let entidadeSel = "";
@@ -15,17 +15,6 @@ export function textoWhats(l) {
     l.prazo ? `⏳ Prazo: até ${dataLonga(l.prazo)}` : ""
   ].filter(Boolean);
   return [...cabecalho, "", l.texto, "", ...detalhes, "", "Marque ✓ *Fiz* no app quando concluir 🙏", "_Fé, Esperança e Caridade_"].join("\n");
-}
-
-async function copiar(texto) {
-  try { await navigator.clipboard.writeText(texto); return true; }
-  catch {
-    // Plano B para navegadores sem permissão de área de transferência
-    const t = document.createElement("textarea");
-    t.value = texto; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0";
-    document.body.appendChild(t); t.select();
-    const ok = document.execCommand("copy"); t.remove(); return ok;
-  }
 }
 
 export function render(el, ctx) {
