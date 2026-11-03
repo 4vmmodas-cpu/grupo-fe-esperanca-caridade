@@ -27,7 +27,12 @@ export const state = {
 let assinaturas = [];
 let recuperandoSenha = false;
 
-function lerAba() { try { return localStorage.getItem("aba") || "agenda"; } catch { return "agenda"; } }
+function lerAba() {
+  // Vindo de uma notificação: ./?aba=estudos
+  const q = new URLSearchParams(location.search).get("aba");
+  if (q && VIEWS[q]) { history.replaceState(null, "", location.pathname); return q; }
+  try { return localStorage.getItem("aba") || "agenda"; } catch { return "agenda"; }
+}
 function gravarAba(a) { try { localStorage.setItem("aba", a); } catch {} }
 const ehAdmin = () => state.perfil?.papel === "admin";
 const ctx = () => ({ state, admin: ehAdmin(), db, atualizar: renderView, irPara, recarregarResumos });
@@ -244,6 +249,12 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   let recarregou = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (jaTinha && !recarregou) { recarregou = true; location.reload(); }
+  });
+  // Toque numa notificação com o app já aberto: vai para a aba indicada
+  navigator.serviceWorker.addEventListener("message", (e) => {
+    if (e.data?.tipo !== "abrir") return;
+    const aba = new URL(e.data.url).searchParams.get("aba");
+    if (aba && VIEWS[aba] && state.perfil) irPara(aba);
   });
   // Ao voltar para o app, confere se há versão nova
   document.addEventListener("visibilitychange", () => {

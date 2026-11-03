@@ -1,5 +1,5 @@
 /* Service worker: deixa o app abrir sem internet e recebe as notificações push. */
-const VERSAO = "fec-v7";
+const VERSAO = "fec-v8";
 const BASE = ["./", "index.html", "css/app.css", "js/app.js", "js/ui.js", "js/db.js", "js/supabase-config.js", "js/push.js",
   "js/agenda.js", "js/licoes.js", "js/estudos.js", "js/membros.js", "js/financeiro.js", "js/relatorio.js", "js/mais.js",
   "assets/logo.jpg", "assets/emblema.svg", "assets/icone-192.png", "manifest.webmanifest"];
@@ -56,7 +56,10 @@ self.addEventListener("notificationclick", (e) => {
   e.notification.close();
   const alvo = new URL(e.notification.data?.url || "./", self.registration.scope).href;
   e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((janelas) => {
-    for (const j of janelas) if (j.url.startsWith(self.registration.scope)) return j.focus();
+    for (const j of janelas) if (j.url.startsWith(self.registration.scope)) {
+      j.postMessage({ tipo: "abrir", url: alvo });
+      return j.focus();
+    }
     return self.clients.openWindow(alvo);
   }));
 });
