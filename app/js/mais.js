@@ -121,12 +121,23 @@ export function render(el, ctx) {
     </section>` : ""}
 
     <section class="cartao">
+      <button class="btn btn-claro btn-largo" data-atualizar-app>🔄 Atualizar app</button>
       <button class="btn btn-claro btn-largo" data-senha>Trocar senha</button>
       <button class="btn btn-perigo-claro btn-largo" data-sair>Sair</button>
     </section>
-    <p class="centro suave rodape-app">Fé, Esperança e Caridade · app v1.0</p>`;
+    <p class="centro suave rodape-app">Fé, Esperança e Caridade · app v1.1</p>`;
 
   cartaoPush(el.querySelector("#cartao-push"));
+  el.querySelector("[data-atualizar-app]").onclick = async (ev) => {
+    ev.currentTarget.disabled = true; ev.currentTarget.textContent = "Atualizando...";
+    // Apaga os arquivos guardados e baixa tudo de novo (dados e login não são afetados)
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration();
+      await reg?.update();
+      if (window.caches) await Promise.all((await caches.keys()).map((k) => caches.delete(k)));
+    } catch {}
+    location.reload();
+  };
   el.querySelector("[data-sair]").onclick = async () => { if (await confirmar("Sair do app?", "Sair")) db.sair(); };
   el.querySelector("[data-senha]").onclick = async () => {
     try { await db.recuperarSenha(p.email); toast("Enviamos um link para trocar a senha no seu e-mail."); }

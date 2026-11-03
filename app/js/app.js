@@ -237,7 +237,17 @@ function traduzErro(e) {
 
 /* ================= PWA ================= */
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  const jaTinha = Boolean(navigator.serviceWorker.controller);
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  // Versão nova publicada: recarrega sozinho para mostrar as novidades
+  let recarregou = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (jaTinha && !recarregou) { recarregou = true; location.reload(); }
+  });
+  // Ao voltar para o app, confere se há versão nova
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") navigator.serviceWorker.getRegistration().then((r) => r?.update()).catch(() => {});
+  });
 }
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); window.__instalar = e; });
 
