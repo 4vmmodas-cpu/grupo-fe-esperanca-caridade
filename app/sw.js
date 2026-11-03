@@ -1,5 +1,5 @@
 /* Service worker: deixa o app abrir sem internet e recebe as notificações push. */
-const VERSAO = "fec-v6";
+const VERSAO = "fec-v7";
 const BASE = ["./", "index.html", "css/app.css", "js/app.js", "js/ui.js", "js/db.js", "js/supabase-config.js", "js/push.js",
   "js/agenda.js", "js/licoes.js", "js/estudos.js", "js/membros.js", "js/financeiro.js", "js/relatorio.js", "js/mais.js",
   "assets/logo.jpg", "assets/emblema.svg", "assets/icone-192.png", "manifest.webmanifest"];

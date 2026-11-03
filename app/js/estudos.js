@@ -3,6 +3,7 @@ import { esc, hojeISO, dataBR, dataLonga, mesId, abrirModal, confirmar, toast, s
 
 let livroAberto = null;          // id do livro aberto (ou null = lista de livros)
 let mostrar = "andamento";       // andamento | concluidos
+const comentariosAbertos = new Set();  // resumos com todos os comentários à mostra
 
 const podeEditar = (x, uid, admin) => admin || x.criadoPorId === uid;
 const registrosDe = (state, livroId) =>
@@ -96,7 +97,7 @@ function telaLivro(el, ctx, livro) {
       </div>
     </section>
     ${regs.length ? `<h2 class="titulo-secao">Resumos dos encontros</h2>` : ""}
-    <div class="lista-licoes">${regs.map((r, i) => cartaoRegistro(r, regs.length - i, uid, admin)).join("")
+    <div class="lista-licoes">${regs.map((r, i) => cartaoRegistro(r, regs.length - i, state, admin)).join("")
       || `<p class="vazio">Toque em <b>+ Estudo do dia</b> para registrar o resumo do primeiro encontro.</p>`}</div>
     <button class="fab" data-registrar aria-label="Registrar estudo do dia">+</button>`;
 
@@ -110,10 +111,57 @@ function telaLivro(el, ctx, livro) {
     window.open("https://wa.me/?text=" + encodeURIComponent(textoWhats(achar(b.dataset.whats), livro)), "_blank"));
   el.querySelectorAll("[data-copiar]").forEach((b) => b.onclick = async () =>
     toast((await copiar(textoWhats(achar(b.dataset.copiar), livro))) ? "Resumo copiado! Cole no grupo do WhatsApp." : "Não foi possível copiar."));
+  el.querySelectorAll("[data-curtir]").forEach((b) => b.onclick = async () => {
+    const r = achar(b.dataset.curtir), antes = r.curtidas || [], curtiu = antes.includes(uid);
+    r.curtidas = curtiu ? antes.filter((x) => x !== uid) : [...antes, uid];   // resposta imediata na tela
+    render(el, ctx);
+    try { await ctx.db.curtirEstudo(r.id, !curtiu); }
+    catch { r.curtidas = antes; render(el, ctx); toast("Não foi possível curtir.", "erro"); }
+  });
+  el.querySelectorAll("[data-comentar]").forEach((b) => b.onclick = () => formComentario(ctx, achar(b.dataset.comentar)));
+  el.querySelectorAll("[data-ver-coment]").forEach((b) => b.onclick = () => {
+    const id = b.dataset.verComent;
+    comentariosAbertos.has(id) ? comentariosAbertos.delete(id) : comentariosAbertos.add(id);
+    render(el, ctx);
+  });
+  const acharC = (id) => (state.comentarios || []).find((c) => c.id === id);
+  el.querySelectorAll("[data-editar-coment]").forEach((b) => b.onclick = () => {
+    const c = acharC(b.dataset.editarComent);
+    formComentario(ctx, achar(c.estudoId), c);
+  });
+  el.querySelectorAll("[data-apagar-coment]").forEach((b) => b.onclick = async () => {
+    if (!(await confirmar("Apagar este comentário?", "Apagar"))) return;
+    try { await ctx.db.excluir("estudo_comentarios", b.dataset.apagarComent); toast("Comentário apagado."); }
+    catch { toast("Não foi possível apagar.", "erro"); }
+  });
 }
 
-function cartaoRegistro(r, numero, uid, admin) {
+/* Nome curto de quem curtiu/comentou (a conta é ligada ao cadastro de Membro) */
+function primeiroNome(state, perfilId) {
+  if (perfilId === state.user.id) return "Você";
+  const n = state.membros.find((m) => m.perfilId === perfilId)?.nome;
+  return n ? n.split(" ")[0] : null;
+}
+function quando(ts) {
+  const d = new Date(ts), hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const dia = d.toDateString() === new Date().toDateString() ? "hoje" : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  return `${dia} às ${hora}`;
+}
+function textoCurtidas(state, ids) {
+  const nomes = ids.map((id) => primeiroNome(state, id)).filter(Boolean).sort((a, b) => (a === "Você" ? -1 : b === "Você" ? 1 : 0));
+  const mostrados = nomes.slice(0, 3), resto = ids.length - mostrados.length;
+  if (!mostrados.length) return `${ids.length} curtida${ids.length > 1 ? "s" : ""}`;
+  return mostrados.join(", ") + (resto > 0 ? ` e mais ${resto}` : "");
+}
+
+function cartaoRegistro(r, numero, state, admin) {
+  const uid = state.user.id;
   const nomes = r.presentesNomes || [];
+  const curtidas = r.curtidas || [], curti = curtidas.includes(uid);
+  const coments = (state.comentarios || []).filter((c) => c.estudoId === r.id);
+  const aberto = comentariosAbertos.has(r.id);
+  const visiveis = aberto || coments.length <= 3 ? coments : coments.slice(-2);
+  const nomeC = (c) => (c.autorNome || primeiroNome(state, c.criadoPorId) || "Membro").split(" ")[0];
   return `<article class="licao registro">
     <header>
       <span class="licao-gira">${numero}º encontro · ${dataLonga(r.data)}</span>
@@ -124,12 +172,53 @@ function cartaoRegistro(r, numero, uid, admin) {
       ${nomes.length ? `<span>👥 ${nomes.length} presente${nomes.length > 1 ? "s" : ""}: ${esc(nomes.map((n) => n.split(" ")[0]).join(", "))}</span>` : ""}
       ${r.criadoPor ? `<span>✍️ ${esc(r.criadoPor.split(" ")[0])}</span>` : ""}
     </div>
+    <div class="interacoes">
+      <button class="btn-curtir${curti ? " curtido" : ""}" data-curtir="${r.id}" aria-pressed="${curti}">${curti ? "❤️" : "🤍"} Curtir${curtidas.length ? ` · ${curtidas.length}` : ""}</button>
+      <button class="btn-curtir" data-comentar="${r.id}">💬 Comentar${coments.length ? ` · ${coments.length}` : ""}</button>
+    </div>
+    ${curtidas.length ? `<p class="quem-curtiu">❤️ ${esc(textoCurtidas(state, curtidas))}</p>` : ""}
+    ${coments.length ? `<div class="comentarios">
+      ${visiveis.length < coments.length ? `<button class="link" data-ver-coment="${r.id}">Ver todos os ${coments.length} comentários</button>` : ""}
+      ${visiveis.map((c) => `<div class="comentario">
+        <p><b>${esc(nomeC(c))}</b> <span class="suave">${quando(c.criadoEm)}${c.editadoEm ? " · editado" : ""}</span></p>
+        <p class="comentario-texto">${esc(c.texto)}</p>
+        ${c.criadoPorId === uid || admin ? `<p class="comentario-acoes">
+          ${c.criadoPorId === uid ? `<button class="link" data-editar-coment="${c.id}">editar</button>` : ""}
+          <button class="link link-perigo" data-apagar-coment="${c.id}">apagar</button></p>` : ""}
+      </div>`).join("")}
+      ${aberto && coments.length > 3 ? `<button class="link" data-ver-coment="${r.id}">Mostrar menos</button>` : ""}
+    </div>` : ""}
     <div class="ev-acoes">
       <button class="btn btn-whats btn-peq" data-whats="${r.id}">📲 WhatsApp</button>
       <button class="btn btn-claro btn-peq" data-copiar="${r.id}">📋 Copiar</button>
       ${podeEditar(r, uid, admin) ? `<button class="btn btn-claro btn-peq" data-editar="${r.id}">Editar</button>` : ""}
     </div>
   </article>`;
+}
+
+/* ================= Comentário ================= */
+function formComentario(ctx, registro, comentario = null) {
+  const { state, db } = ctx;
+  const { el, fechar } = abrirModal(comentario ? "Editar comentário" : "Comentar", `
+    <form class="form" novalidate>
+      <p class="suave">Estudo de ${dataBR(registro.data)}${registro.capitulos ? " · " + esc(registro.capitulos) : ""}</p>
+      <label>Seu comentário<textarea name="texto" rows="4" maxlength="2000" required placeholder="Compartilhe sua reflexão sobre este estudo...">${esc(comentario?.texto || "")}</textarea></label>
+      <div class="acoes-form"><button type="submit" class="btn btn-primario">${comentario ? "Salvar" : "Enviar"}</button></div>
+    </form>`);
+  const f = el.querySelector("form");
+  setTimeout(() => f.texto.focus(), 250);
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const texto = f.texto.value.trim();
+    if (!texto) return toast("Escreva o comentário.", "erro");
+    const ok = await salvando(f.querySelector("[type=submit]"), async () => {
+      if (comentario) await db.atualizar("estudo_comentarios", comentario.id, { texto, editadoEm: new Date().toISOString() });
+      else await db.inserir("estudo_comentarios", { estudoId: registro.id, texto, autorNome: state.perfil.nome, criadoPorId: state.user.id });
+    });
+    if (!ok) return;
+    fechar();
+    toast(comentario ? "Comentário atualizado." : "Comentário enviado! 💬");
+  };
 }
 
 /* ================= Formulário do livro ================= */

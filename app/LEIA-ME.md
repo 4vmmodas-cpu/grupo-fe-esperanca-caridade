@@ -52,7 +52,8 @@ O repositório no GitHub publica sozinho pelo GitHub Pages a cada atualização:
 1. **SQL Editor:** rode `supabase-estudos.sql` uma vez.
 2. Na aba **Estudos**, toque em **+** e cadastre o livro.
 3. A cada encontro, abra o livro e toque em **+ Estudo do dia**. Informe a data, os capítulos, o resumo e quem esteve presente. Encontros do tipo **Estudo** na Agenda também ganham o botão **📚 + Resumo**.
-4. Em **📄 Relatório PDF**, escolha o período (tudo, este mês ou datas). O relatório pode ser de um livro ou de todos.
+4. Cada resumo pode receber **❤️ curtidas** e **💬 comentários** de todos os membros. Para isso, rode também `supabase-estudos-v2.sql`.
+5. Em **📄 Relatório PDF**, escolha o período (tudo, este mês ou datas). O relatório pode ser de um livro ou de todos.
 
 ## Lembretes
 O botão **🔔 Lembrete** salva o encontro ou a lição na agenda do próprio celular, com o aviso escolhido (ex.: 2 horas antes). O celular avisa mesmo com o app fechado.

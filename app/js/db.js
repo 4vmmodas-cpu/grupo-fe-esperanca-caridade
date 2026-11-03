@@ -95,6 +95,7 @@ export async function excluir(tabela, ids) {
   const r = checar(await sb.from(tabela).delete().in("id", lista).select("id"));
   if (!r.length) throw semPermissao();
 }
+export async function curtirEstudo(id, curtir) { checar(await sb.rpc("curtir_estudo", { p_id: id, p_curtir: curtir })); }
 export async function marcarLicao(id, feito) { checar(await sb.rpc("marcar_licao", { p_id: id, p_feito: feito })); }
 
 /* ---------- Comprovantes (arquivos privados) ---------- */
