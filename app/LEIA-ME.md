@@ -55,6 +55,13 @@ O repositório no GitHub publica sozinho pelo GitHub Pages a cada atualização:
 4. Cada resumo pode receber **❤️ curtidas** e **💬 comentários** de todos os membros. Para isso, rode também `supabase-estudos-v2.sql`.
 5. Em **📄 Relatório PDF**, escolha o período (tudo, este mês ou datas). O relatório pode ser de um livro ou de todos.
 
+## Biblioteca (PDFs)
+Fica dentro da aba **Estudos**, no seletor **📖 Biblioteca**. Rode `supabase-biblioteca.sql` uma vez.
+- Todos os membros podem **enviar PDFs** (até 50 MB cada), **ler** e **baixar**.
+- Cada pessoa edita ou exclui só o que ela mesma enviou. Dirigentes podem excluir qualquer livro.
+- O plano grátis do Supabase tem **1 GB** no total. O app mostra o espaço usado.
+- Um livro em estudo pode apontar para o PDF da biblioteca, pelo campo *PDF na Biblioteca*. Assim aparece o botão **📖 Ler o livro**.
+
 ## Lembretes
 O botão **🔔 Lembrete** salva o encontro ou a lição na agenda do próprio celular, com o aviso escolhido (ex.: 2 horas antes). O celular avisa mesmo com o app fechado.
 - **iPhone:** abre direto "Adicionar à Agenda".

@@ -125,7 +125,7 @@ export function render(el, ctx) {
       <button class="btn btn-claro btn-largo" data-senha>Trocar senha</button>
       <button class="btn btn-perigo-claro btn-largo" data-sair>Sair</button>
     </section>
-    <p class="centro suave rodape-app">Fé, Esperança e Caridade · app v1.3</p>`;
+    <p class="centro suave rodape-app">Fé, Esperança e Caridade · app v1.4</p>`;
 
   cartaoPush(el.querySelector("#cartao-push"));
   el.querySelector("[data-atualizar-app]").onclick = async (ev) => {

@@ -8,7 +8,7 @@ export const sb = configurado
   : null;
 
 /* ---------- Conversão de nomes: anfitriaoId (app) <-> anfitriao_id (banco) ---------- */
-const NULOS = new Set(["nascimento", "prazo", "anfitriaoId", "eventoId", "serieId", "hora"]);
+const NULOS = new Set(["nascimento", "prazo", "anfitriaoId", "eventoId", "serieId", "hora", "bibliotecaId"]);
 const snake = (k) => k.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase());
 const camel = (k) => k.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 function paraBanco(o) {
@@ -108,3 +108,42 @@ export async function enviarComprovante(lancId, blob, nome) {
 }
 export async function removerComprovante(caminho) { if (caminho) await sb.storage.from(BUCKET).remove([caminho]); }
 export async function baixarComprovante(caminho) { return checar(await sb.storage.from(BUCKET).download(caminho)); }
+
+/* ---------- Biblioteca (PDFs privados; só membros liberados abrem) ---------- */
+const BIBLIO = "biblioteca";
+/* Envia com barra de progresso: aoProgresso(0..1) */
+export async function enviarPDF(caminho, arquivo, aoProgresso) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) throw semPermissao();
+  const url = `${supabaseConfig.url}/storage/v1/object/${BIBLIO}/${caminho.split("/").map(encodeURIComponent).join("/")}`;
+  await new Promise((ok, falha) => {
+    const x = new XMLHttpRequest();
+    x.open("POST", url);
+    x.setRequestHeader("Authorization", "Bearer " + session.access_token);
+    x.setRequestHeader("apikey", supabaseConfig.anonKey);
+    x.setRequestHeader("x-upsert", "false");
+    x.setRequestHeader("Content-Type", "application/pdf");
+    x.upload.onprogress = (e) => e.lengthComputable && aoProgresso?.(e.loaded / e.total);
+    x.onload = () => {
+      if (x.status < 300) return ok();
+      let msg = x.responseText;
+      try { msg = JSON.parse(x.responseText).message || msg; } catch {}
+      const e = new Error(msg);
+      if (x.status === 413 || /exceeded|too large|maximum allowed size/i.test(msg)) e.code = "grande-demais";
+      else if (x.status === 401 || x.status === 403 || /row-level|policy|unauthorized/i.test(msg)) e.code = "permission-denied";
+      falha(e);
+    };
+    x.onerror = () => falha(Object.assign(new Error("Falha de rede"), { code: "rede" }));
+    x.send(arquivo);
+  });
+  return caminho;
+}
+export async function removerPDF(caminho) { if (caminho) await sb.storage.from(BIBLIO).remove([caminho]); }
+/* Links temporários (1 hora) para ler; o de baixar ganha "&download=nome.pdf" */
+export async function linksPDF(caminhos) {
+  if (!caminhos.length) return {};
+  const lista = checar(await sb.storage.from(BIBLIO).createSignedUrls(caminhos, 3600));
+  const r = {};
+  lista.forEach((l) => { if (l.signedUrl) r[l.path] = l.signedUrl; });
+  return r;
+}

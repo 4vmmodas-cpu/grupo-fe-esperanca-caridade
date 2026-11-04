@@ -1,6 +1,9 @@
 /* Estudos: livros que o grupo estuda e o resumo de cada dia de estudo */
+import * as biblioteca from "./biblioteca.js";
 import { esc, hojeISO, dataBR, dataLonga, mesId, abrirModal, confirmar, toast, salvando, copiar } from "./ui.js";
 
+let secao = lerSecao();         // estudos | biblioteca
+function lerSecao() { try { return localStorage.getItem("secao-estudos") || "estudos"; } catch { return "estudos"; } }
 let livroAberto = null;          // id do livro aberto (ou null = lista de livros)
 let mostrar = "andamento";       // andamento | concluidos
 const comentariosAbertos = new Set();  // resumos com todos os comentários à mostra
@@ -23,12 +26,26 @@ export function textoWhats(r, livro) {
   return linhas.filter((l) => l !== null).join("\n");
 }
 
-export function render(el, ctx) {
+export function render(raiz, ctx) {
+  raiz.innerHTML = `<div class="segmento grande secoes">
+      <button data-secao="estudos" class="${secao === "estudos" ? "ativo" : ""}">📚 Estudos</button>
+      <button data-secao="biblioteca" class="${secao === "biblioteca" ? "ativo" : ""}">📖 Biblioteca</button>
+    </div><div class="sub-view"></div>`;
+  raiz.querySelectorAll("[data-secao]").forEach((b) => b.onclick = () => {
+    if (secao === b.dataset.secao) return;
+    secao = b.dataset.secao;
+    try { localStorage.setItem("secao-estudos", secao); } catch {}
+    window.scrollTo(0, 0); ctx.atualizar();
+  });
+  const el = raiz.querySelector(".sub-view");
+  if (secao === "biblioteca") return biblioteca.render(el, ctx);
   const livro = livroAberto && (ctx.state.livros || []).find((l) => l.id === livroAberto);
   if (livro) return telaLivro(el, ctx, livro);
   livroAberto = null;
   telaLista(el, ctx);
 }
+/* Abre a seção Biblioteca (usado pelo botão "Ler o livro" quando o PDF sumiu) */
+export function irParaBiblioteca(ctx) { secao = "biblioteca"; ctx.irPara("estudos"); }
 
 /* ================= Lista de livros ================= */
 function telaLista(el, ctx) {
@@ -56,9 +73,9 @@ function telaLista(el, ctx) {
       : `<p class="vazio">Nenhum livro ${mostrar === "concluidos" ? "concluído" : "em estudo"}.${!livros.length ? " Toque em + para cadastrar o primeiro livro." : ""}</p>`}</div>
     <button class="fab" data-novo-livro aria-label="Novo livro">+</button>`;
 
-  el.querySelectorAll("[data-mostrar]").forEach((b) => b.onclick = () => { mostrar = b.dataset.mostrar; render(el, ctx); });
-  el.querySelectorAll("[data-abrir]").forEach((b) => b.onclick = () => { livroAberto = b.dataset.abrir; window.scrollTo(0, 0); render(el, ctx); });
-  el.querySelector("[data-novo-livro]").onclick = () => formLivro(ctx, null, (id) => { livroAberto = id; render(el, ctx); });
+  el.querySelectorAll("[data-mostrar]").forEach((b) => b.onclick = () => { mostrar = b.dataset.mostrar; ctx.atualizar(); });
+  el.querySelectorAll("[data-abrir]").forEach((b) => b.onclick = () => { livroAberto = b.dataset.abrir; window.scrollTo(0, 0); ctx.atualizar(); });
+  el.querySelector("[data-novo-livro]").onclick = () => formLivro(ctx, null, (id) => { livroAberto = id; ctx.atualizar(); });
   el.querySelector("[data-relatorio-geral]")?.addEventListener("click", () => dialogoRelatorio(ctx, null));
 }
 
@@ -80,6 +97,8 @@ function telaLivro(el, ctx, livro) {
   const { state, admin } = ctx;
   const uid = state.user.id;
   const regs = registrosDe(state, livro.id);
+  const pdf = livro.bibliotecaId && (state.biblioteca || []).find((b) => b.id === livro.bibliotecaId && b.arquivoPath);
+  if (pdf) biblioteca.garantirLinks(ctx, [pdf]);
   const periodo = regs.length ? `${dataBR(regs[regs.length - 1].data)} a ${dataBR(regs[0].data)}` : "";
 
   el.innerHTML = `
@@ -92,6 +111,7 @@ function telaLivro(el, ctx, livro) {
       <p class="livro-meta">${regs.length ? `📝 ${plural(regs.length, "encontro", "encontros")} · ${periodo}` : "Nenhum estudo registrado ainda."}</p>
       <div class="ev-acoes">
         <button class="btn btn-primario btn-peq" data-registrar>+ Estudo do dia</button>
+        ${pdf ? `<a class="btn btn-claro btn-peq" data-ler-pdf ${biblioteca.linkLer(pdf.arquivoPath) ? `href="${esc(biblioteca.linkLer(pdf.arquivoPath))}"` : ""} target="_blank" rel="noopener">📖 Ler o livro</a>` : ""}
         ${regs.length ? `<button class="btn btn-claro btn-peq" data-relatorio>📄 Relatório PDF</button>` : ""}
         ${podeEditar(livro, uid, admin) ? `<button class="btn btn-claro btn-peq" data-editar-livro>Editar livro</button>` : ""}
       </div>
@@ -102,10 +122,13 @@ function telaLivro(el, ctx, livro) {
     <button class="fab" data-registrar aria-label="Registrar estudo do dia">+</button>`;
 
   const achar = (id) => regs.find((r) => r.id === id);
-  el.querySelector("[data-voltar]").onclick = () => { livroAberto = null; render(el, ctx); };
+  el.querySelector("[data-ler-pdf]")?.addEventListener("click", (e) => {
+    if (!e.currentTarget.getAttribute("href")) { e.preventDefault(); toast("Preparando o arquivo, toque de novo em instantes..."); }
+  });
+  el.querySelector("[data-voltar]").onclick = () => { livroAberto = null; ctx.atualizar(); };
   el.querySelectorAll("[data-registrar]").forEach((b) => b.onclick = () => novoRegistro(ctx, { livroId: livro.id }));
   el.querySelector("[data-relatorio]")?.addEventListener("click", () => dialogoRelatorio(ctx, livro));
-  el.querySelector("[data-editar-livro]")?.addEventListener("click", () => formLivro(ctx, livro, null, () => { livroAberto = null; render(el, ctx); }));
+  el.querySelector("[data-editar-livro]")?.addEventListener("click", () => formLivro(ctx, livro, null, () => { livroAberto = null; ctx.atualizar(); }));
   el.querySelectorAll("[data-editar]").forEach((b) => b.onclick = () => novoRegistro(ctx, { registro: achar(b.dataset.editar) }));
   el.querySelectorAll("[data-whats]").forEach((b) => b.onclick = () =>
     window.open("https://wa.me/?text=" + encodeURIComponent(textoWhats(achar(b.dataset.whats), livro)), "_blank"));
@@ -114,15 +137,15 @@ function telaLivro(el, ctx, livro) {
   el.querySelectorAll("[data-curtir]").forEach((b) => b.onclick = async () => {
     const r = achar(b.dataset.curtir), antes = r.curtidas || [], curtiu = antes.includes(uid);
     r.curtidas = curtiu ? antes.filter((x) => x !== uid) : [...antes, uid];   // resposta imediata na tela
-    render(el, ctx);
+    ctx.atualizar();
     try { await ctx.db.curtirEstudo(r.id, !curtiu); }
-    catch { r.curtidas = antes; render(el, ctx); toast("Não foi possível curtir.", "erro"); }
+    catch { r.curtidas = antes; ctx.atualizar(); toast("Não foi possível curtir.", "erro"); }
   });
   el.querySelectorAll("[data-comentar]").forEach((b) => b.onclick = () => formComentario(ctx, achar(b.dataset.comentar)));
   el.querySelectorAll("[data-ver-coment]").forEach((b) => b.onclick = () => {
     const id = b.dataset.verComent;
     comentariosAbertos.has(id) ? comentariosAbertos.delete(id) : comentariosAbertos.add(id);
-    render(el, ctx);
+    ctx.atualizar();
   });
   const acharC = (id) => (state.comentarios || []).find((c) => c.id === id);
   el.querySelectorAll("[data-editar-coment]").forEach((b) => b.onclick = () => {
@@ -231,6 +254,10 @@ function formLivro(ctx, livro, aoCriar, aoExcluir) {
     <form class="form" novalidate>
       <label>Título do livro<input name="titulo" required value="${esc(l.titulo || "")}" placeholder="Ex.: O Evangelho Segundo o Espiritismo"></label>
       <label>Autor <span class="suave">(opcional)</span><input name="autor" value="${esc(l.autor || "")}" placeholder="Ex.: Allan Kardec"></label>
+      ${(state.biblioteca || []).length ? `<label>PDF na Biblioteca <span class="suave">(opcional)</span>
+        <select name="biblioteca"><option value="">— Nenhum —</option>
+          ${state.biblioteca.slice().sort((a, b) => a.titulo.localeCompare(b.titulo, "pt-BR")).map((b) => `<option value="${b.id}"${b.id === l.bibliotecaId ? " selected" : ""}>${esc(b.titulo)}</option>`).join("")}
+        </select></label>` : ""}
       <label>Observações <span class="suave">(opcional)</span><textarea name="obs" rows="2" placeholder="Ex.: Estudo das quartas, um capítulo por semana">${esc(l.obs || "")}</textarea></label>
       ${novo ? "" : `<label class="check"><input type="checkbox" name="concluido"${l.concluido ? " checked" : ""}> Estudo deste livro concluído</label>`}
       <div class="acoes-form">
@@ -243,6 +270,7 @@ function formLivro(ctx, livro, aoCriar, aoExcluir) {
     e.preventDefault();
     if (!f.titulo.value.trim()) return toast("Informe o título do livro.", "erro");
     const dados = { titulo: f.titulo.value.trim(), autor: f.autor.value.trim(), obs: f.obs.value.trim() };
+    if (f.biblioteca) dados.bibliotecaId = f.biblioteca.value;
     if (!novo) dados.concluido = f.concluido.checked;
     let criado = null;
     const ok = await salvando(f.querySelector("[type=submit]"), async () => {
