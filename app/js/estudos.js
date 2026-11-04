@@ -1,8 +1,9 @@
 /* Estudos: livros que o grupo estuda e o resumo de cada dia de estudo */
 import * as biblioteca from "./biblioteca.js";
+import * as musicas from "./musicas.js";
 import { esc, hojeISO, dataBR, dataLonga, mesId, abrirModal, confirmar, toast, salvando, copiar } from "./ui.js";
 
-let secao = lerSecao();         // estudos | biblioteca
+let secao = lerSecao();         // estudos | biblioteca | musicas
 function lerSecao() { try { return localStorage.getItem("secao-estudos") || "estudos"; } catch { return "estudos"; } }
 let livroAberto = null;          // id do livro aberto (ou null = lista de livros)
 let mostrar = "andamento";       // andamento | concluidos
@@ -30,6 +31,7 @@ export function render(raiz, ctx) {
   raiz.innerHTML = `<div class="segmento grande secoes">
       <button data-secao="estudos" class="${secao === "estudos" ? "ativo" : ""}">📚 Estudos</button>
       <button data-secao="biblioteca" class="${secao === "biblioteca" ? "ativo" : ""}">📖 Biblioteca</button>
+      <button data-secao="musicas" class="${secao === "musicas" ? "ativo" : ""}">🎵 Músicas</button>
     </div><div class="sub-view"></div>`;
   raiz.querySelectorAll("[data-secao]").forEach((b) => b.onclick = () => {
     if (secao === b.dataset.secao) return;
@@ -39,6 +41,7 @@ export function render(raiz, ctx) {
   });
   const el = raiz.querySelector(".sub-view");
   if (secao === "biblioteca") return biblioteca.render(el, ctx);
+  if (secao === "musicas") return musicas.render(el, ctx);
   const livro = livroAberto && (ctx.state.livros || []).find((l) => l.id === livroAberto);
   if (livro) return telaLivro(el, ctx, livro);
   livroAberto = null;

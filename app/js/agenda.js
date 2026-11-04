@@ -130,6 +130,13 @@ function avisar(e) {
 }
 
 /* ================= Formulário ================= */
+/* Mesmo dia em outro ano (29/02 vira 28/02 nos anos comuns) */
+function somaAnos(data, n) {
+  const [a, m, d] = data.split("-").map(Number);
+  const ano = a + n, ultimo = new Date(ano, m, 0).getDate();
+  return `${ano}-${String(m).padStart(2, "0")}-${String(Math.min(d, ultimo)).padStart(2, "0")}`;
+}
+
 function formulario(ctx, ev, dataInicial) {
   const { state, db } = ctx;
   const novo = !ev;
@@ -153,8 +160,17 @@ function formulario(ctx, ev, dataInicial) {
       <label>Endereço<input name="local" value="${esc(ev.local || "")}" placeholder="Preenchido pelo cadastro do membro"></label>
       <label>Observações<textarea name="obs" rows="2" placeholder="Ex.: levar vela branca, roupa branca">${esc(ev.obs || "")}</textarea></label>
       ${novo ? `
-      <label class="check"><input type="checkbox" name="repetir"> Repetir toda semana</label>
-      <div class="bloco-rep" hidden>
+      <label>Repetir
+        <select name="repetir">
+          <option value="">Não repetir</option>
+          <option value="semana">Toda semana</option>
+          <option value="ano">Todo ano (ex.: festa de Orixá, aniversário da casa)</option>
+        </select></label>
+      <div class="bloco-rep bloco-ano" hidden>
+        <label>Por quantos anos?<input name="anos" type="number" min="2" max="20" value="5"></label>
+        <p class="suave dica">Cria o encontro na mesma data, todos os anos.</p>
+      </div>
+      <div class="bloco-rep bloco-semana" hidden>
         <label>Por quantas semanas?<input name="semanas" type="number" min="2" max="52" value="8"></label>
         <p class="rotulo">Rodízio de casas <span class="suave">(toque na ordem; deixe vazio para usar sempre a mesma)</span></p>
         <div class="rodizio">${state.membros.map((m) => `<button type="button" class="chip" data-rod="${m.id}">${esc(m.nome)}<i></i></button>`).join("") || '<p class="suave">Cadastre membros para usar o rodízio.</p>'}</div>
@@ -179,7 +195,10 @@ function formulario(ctx, ev, dataInicial) {
   // Rodízio: guarda a ordem dos toques
   const ordem = [];
   if (novo) {
-    f.repetir.addEventListener("change", () => (el.querySelector(".bloco-rep").hidden = !f.repetir.checked));
+    f.repetir.addEventListener("change", () => {
+      el.querySelector(".bloco-semana").hidden = f.repetir.value !== "semana";
+      el.querySelector(".bloco-ano").hidden = f.repetir.value !== "ano";
+    });
     el.querySelectorAll("[data-rod]").forEach((b) => b.addEventListener("click", () => {
       const i = ordem.indexOf(b.dataset.rod);
       i >= 0 ? ordem.splice(i, 1) : ordem.push(b.dataset.rod);
@@ -205,7 +224,14 @@ function formulario(ctx, ev, dataInicial) {
     const ok = await salvando(f.querySelector("[type=submit]"), async () => {
       if (!novo) {
         await db.atualizar("eventos", ev.id, { ...base, ...comCasa(f.anfitriao.value, f.local.value.trim()) });
-      } else if (f.repetir.checked) {
+      } else if (f.repetir.value === "ano") {
+        const n = Math.min(20, Math.max(2, parseInt(f.anos.value, 10) || 5));
+        const serieId = crypto.randomUUID();
+        const casa = comCasa(f.anfitriao.value, f.local.value.trim());
+        const lista = [];
+        for (let k = 0; k < n; k++) lista.push({ ...base, ...casa, data: somaAnos(base.data, k), serieId });
+        await db.inserir("eventos", lista);
+      } else if (f.repetir.value === "semana") {
         const n = Math.min(52, Math.max(2, parseInt(f.semanas.value, 10) || 8));
         const serieId = crypto.randomUUID();
         const lista = [];
@@ -218,7 +244,7 @@ function formulario(ctx, ev, dataInicial) {
         await db.inserir("eventos", { ...base, ...comCasa(f.anfitriao.value, f.local.value.trim()) });
       }
     });
-    if (ok) { fechar(); toast(novo && f.repetir?.checked ? "Encontros criados!" : "Encontro salvo!"); }
+    if (ok) { fechar(); toast(novo && f.repetir?.value ? "Encontros criados!" : "Encontro salvo!"); }
   };
 
   el.querySelector("[data-excluir]")?.addEventListener("click", async () => {

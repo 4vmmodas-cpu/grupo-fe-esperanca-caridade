@@ -7,7 +7,7 @@ Dados e login ficam no **Supabase** (plano grátis), e a hospedagem no **GitHub 
 ## O que tem
 | Aba | Todos os membros | Dirigentes / Tesouraria |
 |---|---|---|
-| **Agenda** | Calendário, casa e endereço (com mapa), lembrete no celular, avisar no WhatsApp | Criar e editar encontros, repetir semanalmente com **rodízio de casas** |
+| **Agenda** | Calendário, casa e endereço (com mapa), lembrete no celular, avisar no WhatsApp | Criar e editar encontros, repetir **toda semana** (com **rodízio de casas**) ou **todo ano** |
 | **Lições** | Ver, **registrar** (e editar as próprias), marcar **✓ Fiz**, lembrete, enviar no WhatsApp | Editar ou excluir qualquer lição |
 | **Estudos** | Ver os livros e os resumos de cada encontro, **cadastrar livros e registrar o estudo do dia** (capítulos, resumo, presentes), enviar no WhatsApp, **relatório em PDF** | Editar ou excluir qualquer registro; excluir livros |
 | **Membros** | Lista com WhatsApp e aniversariantes do mês | Cadastrar e editar membros |
@@ -61,6 +61,12 @@ Fica dentro da aba **Estudos**, no seletor **📖 Biblioteca**. Rode `supabase-b
 - Cada pessoa edita ou exclui só o que ela mesma enviou. Dirigentes podem excluir qualquer livro.
 - O plano grátis do Supabase tem **1 GB** no total. O app mostra o espaço usado.
 - Um livro em estudo pode apontar para o PDF da biblioteca, pelo campo *PDF na Biblioteca*. Assim aparece o botão **📖 Ler o livro**.
+
+## Músicas (pontos cantados)
+Fica na aba **Estudos**, no seletor **🎵 Músicas**. Rode `supabase-musicas.sql` uma vez.
+- Todos escrevem letras, com linha ou Orixá, link para ouvir e observações.
+- Cada pessoa edita ou exclui só o que escreveu. Dirigentes podem moderar.
+- Tem busca pelo nome ou por um trecho da letra, filtro por linha e envio no WhatsApp.
 
 ## Lembretes
 O botão **🔔 Lembrete** salva o encontro ou a lição na agenda do próprio celular, com o aviso escolhido (ex.: 2 horas antes). O celular avisa mesmo com o app fechado.

@@ -312,3 +312,15 @@ a.btn:not([href]) { opacity: .6; }
 .progresso { position: relative; height: 26px; background: var(--fundo); border-radius: 999px; overflow: hidden; }
 .progresso-barra { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--vermelho); transition: width .2s; }
 .progresso span { position: relative; display: block; text-align: center; line-height: 26px; font-size: .85rem; font-weight: 800; mix-blend-mode: difference; color: #fff; }
+
+/* ===== Músicas ===== */
+.secoes { grid-template-columns: repeat(3, 1fr); }
+.secoes button { padding: 10px 4px; font-size: .88rem; white-space: nowrap; }
+.intro-musicas { background: linear-gradient(135deg, #1c1c1c, #2a1a3a); }
+.musica { border-left-color: #6b3fa0; gap: 10px; }
+.musica-topo { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.musica-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.musica h3 { color: #6b3fa0; }
+@media (prefers-color-scheme: dark) { .musica h3 { color: #c3a0ea; } }
+.musica-previa { font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.letra { white-space: pre-wrap; font-size: 1.08rem; line-height: 1.65; background: var(--fundo); border-radius: 12px; padding: 14px 16px; }

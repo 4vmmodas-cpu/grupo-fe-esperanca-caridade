@@ -21,7 +21,7 @@ const ABAS = [
 export const state = {
   user: undefined,          // undefined = carregando, null = deslogado
   perfil: null,
-  membros: [], eventos: [], licoes: [], livros: [], estudos: [], comentarios: [], biblioteca: [], lancamentos: [], resumos: {}, usuarios: [],
+  membros: [], eventos: [], licoes: [], livros: [], estudos: [], comentarios: [], biblioteca: [], musicas: [], lancamentos: [], resumos: {}, usuarios: [],
   aba: lerAba()
 };
 let assinaturas = [];
@@ -188,6 +188,7 @@ function iniciarDados() {
   assinaturas.push(ouvir("livros", "livros"));
   assinaturas.push(ouvir("estudos", "estudos"));
   assinaturas.push(ouvir("biblioteca", "biblioteca"));
+  assinaturas.push(ouvir("musicas", "musicas"));
   assinaturas.push(ouvir("estudo_comentarios", "comentarios", (x, y) => x.criadoEm.localeCompare(y.criadoEm)));
   recarregarResumos();
   const aoVoltar = () => document.visibilityState === "visible" && recarregarResumos();
@@ -200,7 +201,7 @@ function iniciarDados() {
 }
 function pararDados() {
   assinaturas.forEach((u) => u()); assinaturas = [];
-  Object.assign(state, { membros: [], eventos: [], licoes: [], livros: [], estudos: [], comentarios: [], biblioteca: [], lancamentos: [], resumos: {}, usuarios: [] });
+  Object.assign(state, { membros: [], eventos: [], licoes: [], livros: [], estudos: [], comentarios: [], biblioteca: [], musicas: [], lancamentos: [], resumos: {}, usuarios: [] });
 }
 
 let pararPerfil = null, papelAtual = null, uidAtual = null;
