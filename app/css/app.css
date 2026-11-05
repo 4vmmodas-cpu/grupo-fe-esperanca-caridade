@@ -324,3 +324,11 @@ a.btn:not([href]) { opacity: .6; }
 @media (prefers-color-scheme: dark) { .musica h3 { color: #c3a0ea; } }
 .musica-previa { font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .letra { white-space: pre-wrap; font-size: 1.08rem; line-height: 1.65; background: var(--fundo); border-radius: 12px; padding: 14px 16px; }
+
+/* ===== Agenda: semana/mês ===== */
+.dia.na-semana { background: var(--vermelho-claro); }
+.nav-semana { display: flex; align-items: center; gap: 6px; width: 100%; justify-content: space-between; }
+.nav-semana > span { flex: 1; text-align: center; }
+.nav-semana small { font-weight: 600; font-size: .85rem; margin-left: 4px; }
+.nav-semana .btn-icone { font-size: 1.6rem; }
+.evento.passado { opacity: .6; }

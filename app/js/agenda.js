@@ -18,11 +18,24 @@ const classeTipo = (t) => "tipo-" + (t || "Outro").normalize("NFD").replace(/[̀
 
 let mesVisto = null;   // Date do 1º dia do mês exibido
 let diaSel = null;     // "AAAA-MM-DD" ou null
+let semanaIni = null;  // domingo da semana mostrada na lista ("AAAA-MM-DD")
+let modo = lerModo();  // semana | mes
+function lerModo() { try { return localStorage.getItem("agenda-modo") || "semana"; } catch { return "semana"; } }
+const domingoDe = (dia) => somaDias(dia, -deISO(dia).getDay());
+/* Semana padrão do mês exibido: a de hoje (se for o mês atual) ou a do dia 1 */
+function semanaPadrao(ano, m) {
+  const hoje = hojeISO(), ini = `${ano}-${pad(m + 1)}-01`;
+  return domingoDe(hoje.slice(0, 7) === ini.slice(0, 7) ? hoje : ini);
+}
 
 export function render(el, ctx) {
   const { state, admin } = ctx;
   if (!mesVisto) { const d = new Date(); mesVisto = new Date(d.getFullYear(), d.getMonth(), 1); }
   const ano = mesVisto.getFullYear(), m = mesVisto.getMonth(), hoje = hojeISO();
+  const idMes = `${ano}-${pad(m + 1)}`;
+  if (!semanaIni) semanaIni = semanaPadrao(ano, m);
+  const semanaFim = somaDias(semanaIni, 6);
+  const naSemana = (id) => modo === "semana" && !diaSel && id >= semanaIni && id <= semanaFim;
 
   const porDia = {};
   state.eventos.forEach((e) => (porDia[e.data] ||= []).push(e));
@@ -32,18 +45,32 @@ export function render(el, ctx) {
   const total = new Date(ano, m + 1, 0).getDate();
   for (let d = 1; d <= total; d++) {
     const id = `${ano}-${pad(m + 1)}-${pad(d)}`, evs = porDia[id] || [];
-    cels += `<button class="dia${id === hoje ? " hoje" : ""}${id === diaSel ? " sel" : ""}${evs.length ? " tem" : ""}" data-dia="${id}" aria-label="${d} de ${MESES[m]}${evs.length ? ", " + evs.length + " evento(s)" : ""}">
+    cels += `<button class="dia${naSemana(id) ? " na-semana" : ""}${id === hoje ? " hoje" : ""}${id === diaSel ? " sel" : ""}${evs.length ? " tem" : ""}" data-dia="${id}" aria-label="${d} de ${MESES[m]}${evs.length ? ", " + evs.length + " evento(s)" : ""}">
       <span>${d}</span><i>${evs.slice(0, 3).map((e) => `<b class="${classeTipo(e.tipo)}"></b>`).join("")}</i></button>`;
   }
 
   let lista, tituloLista;
   if (diaSel) {
     lista = porDia[diaSel] || [];
-    tituloLista = `${dataLonga(diaSel)} <button class="link" data-limpar>ver próximos</button>`;
+    tituloLista = `${dataLonga(diaSel)} <button class="link" data-limpar>voltar</button>`;
+  } else if (modo === "semana") {
+    lista = state.eventos.filter((e) => e.data >= semanaIni && e.data <= semanaFim);
+    const curta = (d) => d.split("-").reverse().slice(0, 2).join("/");
+    tituloLista = `<span class="nav-semana"><button class="btn-icone" data-semana="-1" aria-label="Semana anterior">‹</button>
+      <span>${semanaIni === domingoDe(hoje) ? "Esta semana" : "Semana"} <small class="suave">${curta(semanaIni)} a ${curta(semanaFim)}</small></span>
+      <button class="btn-icone" data-semana="1" aria-label="Próxima semana">›</button></span>`;
   } else {
-    lista = state.eventos.filter((e) => e.data >= hoje).slice(0, 12);
-    tituloLista = `Próximos encontros ${lista.length > 1 ? `<button class="link" data-lembrar-todos>🔔 Lembrete de todos</button>` : ""}`;
+    lista = state.eventos.filter((e) => e.data.startsWith(idMes));
+    tituloLista = `Encontros de ${MESES[m].toLowerCase()}`;
   }
+  const futuros = lista.filter((e) => e.data >= hoje);
+  const seletor = diaSel ? "" : `<div class="barra-acoes">
+      <div class="segmento">
+        <button data-modo="semana" class="${modo === "semana" ? "ativo" : ""}">Semana</button>
+        <button data-modo="mes" class="${modo === "mes" ? "ativo" : ""}">Mês inteiro</button>
+      </div>
+      ${futuros.length > 1 ? `<button class="link" data-lembrar-todos>🔔 Lembrete de todos</button>` : ""}
+    </div>`;
 
   let dispensou = false;
   try { dispensou = localStorage.getItem("aviso-push") === "x"; } catch {}
@@ -66,9 +93,10 @@ export function render(el, ctx) {
       <div class="cal-grade">${cels}</div>
       <div class="legenda">${TIPOS.map((t) => `<span><b class="${classeTipo(t)}"></b>${t}</span>`).join("")}</div>
     </section>
+    ${seletor}
     <h2 class="titulo-secao">${tituloLista}</h2>
-    <div class="lista-eventos">${lista.length ? lista.map((e) => cartaoEvento(e, admin, (state.licoes || []).filter((l) => l.eventoId === e.id || (!l.eventoId && l.data === e.data && e.tipo === "Gira")).length)).join("")
-      : `<p class="vazio">${diaSel ? "Nenhum encontro neste dia." : "Nenhum encontro agendado."}${admin ? " Toque em + para criar." : ""}</p>`}</div>
+    <div class="lista-eventos">${lista.length ? lista.map((e) => cartaoEvento(e, e.data < hoje, admin, (state.licoes || []).filter((l) => l.eventoId === e.id || (!l.eventoId && l.data === e.data && e.tipo === "Gira")).length)).join("")
+      : `<p class="vazio">${diaSel ? "Nenhum encontro neste dia." : modo === "semana" ? "Nenhum encontro nesta semana." : "Nenhum encontro neste mês."}${admin ? " Toque em + para criar." : ""}</p>`}</div>
     ${admin ? `<button class="fab" data-novo aria-label="Novo encontro">+</button>` : ""}`;
 
   el.querySelector("[data-completar]")?.addEventListener("click", () => irParaMeusDados(ctx));
@@ -78,7 +106,20 @@ export function render(el, ctx) {
     el.querySelector(".aviso-push").remove();
   });
   el.querySelectorAll("[data-mes]").forEach((b) => b.onclick = () => {
-    mesVisto = new Date(ano, m + Number(b.dataset.mes), 1); diaSel = null; render(el, ctx);
+    mesVisto = new Date(ano, m + Number(b.dataset.mes), 1); diaSel = null;
+    semanaIni = semanaPadrao(mesVisto.getFullYear(), mesVisto.getMonth());
+    render(el, ctx);
+  });
+  el.querySelectorAll("[data-modo]").forEach((b) => b.onclick = () => {
+    modo = b.dataset.modo;
+    try { localStorage.setItem("agenda-modo", modo); } catch {}
+    render(el, ctx);
+  });
+  el.querySelectorAll("[data-semana]").forEach((b) => b.onclick = () => {
+    semanaIni = somaDias(semanaIni, 7 * Number(b.dataset.semana));
+    const meio = deISO(somaDias(semanaIni, 3));   // o calendário acompanha a semana
+    mesVisto = new Date(meio.getFullYear(), meio.getMonth(), 1);
+    render(el, ctx);
   });
   el.querySelectorAll("[data-dia]").forEach((b) => b.onclick = () => {
     diaSel = diaSel === b.dataset.dia ? null : b.dataset.dia; render(el, ctx);
@@ -88,16 +129,16 @@ export function render(el, ctx) {
   el.querySelectorAll("[data-editar]").forEach((b) => b.onclick = () => formulario(ctx, state.eventos.find((e) => e.id === b.dataset.editar)));
   el.querySelectorAll("[data-avisar]").forEach((b) => b.onclick = () => avisar(state.eventos.find((e) => e.id === b.dataset.avisar)));
   el.querySelectorAll("[data-lembrar]").forEach((b) => b.onclick = () => abrirLembrete([paraLembrete(state.eventos.find((e) => e.id === b.dataset.lembrar))]));
-  el.querySelector("[data-lembrar-todos]")?.addEventListener("click", () => abrirLembrete(lista.map(paraLembrete)));
+  el.querySelector("[data-lembrar-todos]")?.addEventListener("click", () => abrirLembrete(futuros.map(paraLembrete)));
   el.querySelectorAll("[data-licao]").forEach((b) => b.onclick = () => novaLicao(ctx, state.eventos.find((e) => e.id === b.dataset.licao)));
   el.querySelectorAll("[data-resumo]").forEach((b) => b.onclick = () => novoRegistro(ctx, { evento: state.eventos.find((e) => e.id === b.dataset.resumo) }));
   el.querySelectorAll("[data-ver-licoes]").forEach((b) => b.onclick = () => { state.aba = "licoes"; ctx.irPara("licoes"); });
 }
 
-function cartaoEvento(e, admin, qtdLicoes = 0) {
+function cartaoEvento(e, passado, admin, qtdLicoes = 0) {
   const d = deISO(e.data);
   const titulo = e.titulo || e.tipo;
-  return `<article class="evento ${classeTipo(e.tipo)}">
+  return `<article class="evento ${classeTipo(e.tipo)}${passado ? " passado" : ""}">
     <div class="ev-data"><b>${pad(d.getDate())}</b><span>${MESES_CURTOS[d.getMonth()]}</span></div>
     <div class="ev-info">
       <span class="etiqueta">${esc(e.tipo)}</span>
